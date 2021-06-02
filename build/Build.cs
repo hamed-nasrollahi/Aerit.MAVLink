@@ -25,25 +25,39 @@ class Build : NukeBuild
     //[GitRepository] readonly GitRepository GitRepository;
 
     AbsolutePath SourceDirectory => RootDirectory / "source";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
+
+    AbsolutePath GeneratedEnumsDirectory => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums";
+    AbsolutePath GeneratedMessagesDirectory => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Messages";
+    AbsolutePath GeneratedMessageTestsDirectory => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
+
+    //AbsolutePath OutputDirectory => RootDirectory / "output";
 
     Target Clean => _ => _
         .Before(Generate)
         .Executes(() =>
         {
             SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(OutputDirectory);
 
-            EnsureCleanDirectory(SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums");
-            EnsureCleanDirectory(SourceDirectory / "Aerit.MAVLink" / "Generated" / "Messages");
+            EnsureCleanDirectory(GeneratedEnumsDirectory);
+            EnsureCleanDirectory(GeneratedMessagesDirectory);
+            EnsureCleanDirectory(GeneratedMessageTestsDirectory);
 
-            EnsureCleanDirectory(SourceDirectory / "Aerit.MAVLink.Tests" / "Generated");
+            //EnsureCleanDirectory(OutputDirectory);
         });
 
     Target Generate => _ => _
         .Executes(() =>
         {
-            Generator.Run(new());
+            EnsureExistingDirectory(GeneratedEnumsDirectory);
+            EnsureExistingDirectory(GeneratedMessagesDirectory);
+            EnsureExistingDirectory(GeneratedMessageTestsDirectory);
+
+            Generator.Run(new(
+                Definitions: (@"../mavlink/message_definitions/v1.0", "common.xml"),
+                Destination: new(
+                    Enums: GeneratedEnumsDirectory, 
+                    Messages: GeneratedMessagesDirectory,
+                    Tests: GeneratedMessageTestsDirectory)));
         });
 
     Target Restore => _ => _

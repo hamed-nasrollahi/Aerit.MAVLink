@@ -5,29 +5,16 @@ namespace Aerit.MAVLink.Generator
 {
     public static class Generator
     {
-        public record Destination
-        {
-            public string Enums { get; init; }
-                = @"source/Aerit.MAVLink/Generated/Enums";
+        public record Destination(
+            string Enums,
+            string Messages,
+            string? Tests = null);
 
-            public string Messages { get; init; }
-                = @"source/Aerit.MAVLink/Generated/Messages";
-
-            public string? Tests { get; init; }
-                = @"source/Aerit.MAVLink.Tests/Generated";
-        }
-
-        public record Config
-        {
-            public (string path, string file) Definitions { get; init; }
-                = (@"/Users/pablo/source/mavlink/mavlink/message_definitions/v1.0", "common.xml");
-
-            public Destination Destination { get; init; } = new();
-
-            public string NameSpace { get; init; } = "Aerit.MAVLink";
-
-            public bool TestDeprecated { get; set; }
-        }
+        public record Config(
+            (string path, string file) Definitions,
+            Destination Destination,
+            string NameSpace = "Aerit.MAVLink",
+            bool TestDeprecated = false);
 
         public static void Run(Config config)
         {
