@@ -13,8 +13,8 @@ namespace Aerit.MAVLink.Generator
         public record Config(
             (string path, string file) Definitions,
             Destination Destination,
-            string NameSpace = "Aerit.MAVLink",
-            bool TestDeprecated = false);
+            string Namespace,
+            bool TestDeprecated);
 
         public static void Run(Config config)
         {
@@ -24,7 +24,7 @@ namespace Aerit.MAVLink.Generator
 
             foreach (var _enum in enums)
             {
-                var name = EnumGenerator.Run(config.NameSpace, _enum, builder);
+                var name = EnumGenerator.Run(config.Namespace, _enum, builder);
 
                 File.WriteAllText(Path.Combine(config.Destination.Enums, $"{name}.cs"), builder.ToString());
 
@@ -33,7 +33,7 @@ namespace Aerit.MAVLink.Generator
 
             foreach (var message in messages)
             {
-                var name = MessageGenerator.Run(config.NameSpace, message, builder);
+                var name = MessageGenerator.Run(config.Namespace, message, builder);
 
                 File.WriteAllText(Path.Combine(config.Destination.Messages, $"{name}.cs"), builder.ToString());
 
@@ -46,7 +46,7 @@ namespace Aerit.MAVLink.Generator
                         continue;
                     }
                     
-                    name = MessageTestGenerator.Run(config.NameSpace, message, builder);
+                    name = MessageTestGenerator.Run(config.Namespace, message, builder);
 
                     File.WriteAllText(Path.Combine(config.Destination.Tests, $"{name}Test.cs"), builder.ToString());
 

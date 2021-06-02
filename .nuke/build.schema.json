@@ -39,6 +39,10 @@
             "TravisCI"
           ]
         },
+        "Namespace": {
+          "type": "string",
+          "description": "Namespace"
+        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
@@ -89,6 +93,10 @@
               "Test"
             ]
           }
+        },
+        "TestDeprecated": {
+          "type": "boolean",
+          "description": "Generate tests for deprecated messages"
         },
         "Verbosity": {
           "type": "string",

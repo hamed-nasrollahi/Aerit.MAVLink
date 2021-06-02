@@ -16,7 +16,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 [ShutdownDotNetAfterServerBuild]
 class Build : NukeBuild
 {
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main() => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -26,11 +26,17 @@ class Build : NukeBuild
 
     AbsolutePath SourceDirectory => RootDirectory / "source";
 
-    AbsolutePath GeneratedEnumsDirectory => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums";
-    AbsolutePath GeneratedMessagesDirectory => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Messages";
-    AbsolutePath GeneratedMessageTestsDirectory => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
+    AbsolutePath EnumsDestination => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums";
+    AbsolutePath MessagesDestination => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Messages";
+    AbsolutePath TestsDestination => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
 
     //AbsolutePath OutputDirectory => RootDirectory / "output";
+
+    [Parameter("Namespace")]
+    string Namespace { get; set; } = "Aerit.MAVLink";
+
+    [Parameter("Generate tests for deprecated messages")]
+    bool TestDeprecated { get; set; }
 
     Target Clean => _ => _
         .Before(Generate)
@@ -38,9 +44,9 @@ class Build : NukeBuild
         {
             SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
 
-            EnsureCleanDirectory(GeneratedEnumsDirectory);
-            EnsureCleanDirectory(GeneratedMessagesDirectory);
-            EnsureCleanDirectory(GeneratedMessageTestsDirectory);
+            EnsureCleanDirectory(EnumsDestination);
+            EnsureCleanDirectory(MessagesDestination);
+            EnsureCleanDirectory(TestsDestination);
 
             //EnsureCleanDirectory(OutputDirectory);
         });
@@ -48,16 +54,18 @@ class Build : NukeBuild
     Target Generate => _ => _
         .Executes(() =>
         {
-            EnsureExistingDirectory(GeneratedEnumsDirectory);
-            EnsureExistingDirectory(GeneratedMessagesDirectory);
-            EnsureExistingDirectory(GeneratedMessageTestsDirectory);
+            EnsureExistingDirectory(EnumsDestination);
+            EnsureExistingDirectory(MessagesDestination);
+            EnsureExistingDirectory(TestsDestination);
 
             Generator.Run(new(
                 Definitions: (@"../mavlink/message_definitions/v1.0", "common.xml"),
                 Destination: new(
-                    Enums: GeneratedEnumsDirectory, 
-                    Messages: GeneratedMessagesDirectory,
-                    Tests: GeneratedMessageTestsDirectory)));
+                    Enums: EnumsDestination,
+                    Messages: MessagesDestination,
+                    Tests: TestsDestination),
+                Namespace: Namespace,
+                TestDeprecated: TestDeprecated));
         });
 
     Target Restore => _ => _
