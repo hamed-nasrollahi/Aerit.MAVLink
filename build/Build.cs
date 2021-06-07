@@ -24,6 +24,8 @@ class Build : NukeBuild
     [Solution] readonly Solution Solution;
     //[GitRepository] readonly GitRepository GitRepository;
 
+    AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink/message_definitions/v1.0";
+
     AbsolutePath SourceDirectory => RootDirectory / "source";
 
     AbsolutePath EnumsDestination => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums";
@@ -59,7 +61,7 @@ class Build : NukeBuild
             EnsureExistingDirectory(TestsDestination);
 
             Generator.Run(new(
-                Definitions: (@"../mavlink/message_definitions/v1.0", "common.xml"),
+                Definitions: (DefinitionsDirectory, "common.xml"),
                 Destination: new(
                     Enums: EnumsDestination,
                     Messages: MessagesDestination,
