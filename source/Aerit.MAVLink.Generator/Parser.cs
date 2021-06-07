@@ -160,29 +160,15 @@ namespace Aerit.MAVLink.Generator
         }
 
         private static ParamDefinition? ParseParamDefinition(XElement param)
-        {
-            var label = (string?)param.Attribute("label");
-            if (string.IsNullOrEmpty(label))
-            {
-                return null;
-            }
-            var units = (string?)param.Attribute("units");
-            var _enum = (string?)param.Attribute("enum");
-            var increment = (string?)param.Attribute("increment");
-            var minValue = (string?)param.Attribute("minValue");
-            var maxValue = (string?)param.Attribute("maxValue");
-            var _default = (string?)param.Attribute("default");
-
-            return new(
-                label,
-                units,
-                _enum,
-                increment,
-                minValue,
-                maxValue,
-                _default
-            );
-        }
+            => new(
+                param.Value,
+                (string?)param.Attribute("label"),
+                (string?)param.Attribute("units"),
+                (string?)param.Attribute("enum"),
+                (string?)param.Attribute("increment"),
+                (string?)param.Attribute("minValue"),
+                (string?)param.Attribute("maxValue"),
+                (string?)param.Attribute("default"));
 
         private static EntryDefinition ParseEntryDefinition(XElement entry)
         {
@@ -197,7 +183,6 @@ namespace Aerit.MAVLink.Generator
             if (elements.Any())
             {
                 _params = new ParamDefinition?[7];
-
                 foreach (var param in elements)
                 {
                     var index = (int?)param.Attribute("index") ?? throw new Exception("Missing parameter Index");

@@ -1,7 +1,8 @@
 ﻿namespace Aerit.MAVLink.Generator
 {
     public record ParamDefinition(
-        string Label,
+        string? Description,
+        string? Label,
         string? Units,
         string? Enum,
         string? Increment,
