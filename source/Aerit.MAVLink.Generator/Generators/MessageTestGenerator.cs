@@ -63,8 +63,9 @@ namespace Aerit.MAVLink.Generator
 
         public static string Run(string ns, MessageDefinition message, StringBuilder builder)
         {
+            builder.AppendLine("using System;");
+            builder.AppendLine();
             builder.AppendLine("using Xunit;");
-
             builder.AppendLine();
 
             builder.AppendLine($"namespace {ns}.Tests");
@@ -80,7 +81,7 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine("        {");
 
             builder.AppendLine("            // Arrange");
-            builder.AppendLine($"            var buffer = new byte[{name}.MessageLength];");
+            builder.AppendLine($"            Span<byte> buffer = new byte[{name}.MAVLinkMessageLength];");
             builder.AppendLine($"            var messageIn = new {name}()");
             builder.AppendLine("            {");
 
@@ -109,8 +110,8 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine();
 
             builder.AppendLine("            // Act");
-            builder.AppendLine("            var serialized = messageIn.Serialize(buffer);");
-            builder.AppendLine($"            var messageOut = {name}.Deserialize(serialized.Span);");
+            builder.AppendLine("            messageIn.Serialize(buffer);");
+            builder.AppendLine($"            var messageOut = {name}.Deserialize(buffer);");
 
             builder.AppendLine();
 

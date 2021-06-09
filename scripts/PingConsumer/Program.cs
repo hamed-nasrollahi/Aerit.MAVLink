@@ -1,25 +1,47 @@
-﻿using System;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 
 using Aerit.MAVLink;
 
+using PacketV1 = Aerit.MAVLink.V1.Packet;
+using PacketV2 = Aerit.MAVLink.V2.Packet;
+
 using var client = new UdpClient(4001);
 
+/*
 while (true)
 {
     var frame = await client.ReceiveAsync();
 
-    if (frame.Length > 0)
+    if (frame.Buffer.Length > 0)
     {
-        if (frame.Buffer[0] == Magic.V2)
+        switch ((Magic)frame.Buffer[0])
         {
-            var packet = V2.Packet.Deserialize(frame.Buffer);
+            case Magic.V1:
+                {
+                    var packet = PacketV1.Deserialize(frame.Buffer);
 
-            if (packet.Validate(Ping.MessageCRCExtra))
-            {
-                var ping = Ping.Deserialize(packet.Payload);
-            }
+                    if (packet.Validate())
+                    {
+                        var ping = Ping.Deserialize(packet.Payload.Span);
+                    }
+                }
+                break;
+
+            case Magic.V2:
+                {
+                    var packet = PacketV2.Deserialize(frame.Buffer);
+
+                    if (packet.Validate())
+                    {
+                        var ping = Ping.Deserialize(packet.Payload.Span);
+                    }
+                }
+                break;
+
+            default:
+                break;
         }
     }
 }
+*/

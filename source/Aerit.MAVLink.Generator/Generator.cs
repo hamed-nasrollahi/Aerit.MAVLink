@@ -6,6 +6,7 @@ namespace Aerit.MAVLink.Generator
     public static class Generator
     {
         public record Destination(
+            string Generated,
             string Enums,
             string Messages,
             string? Tests = null);
@@ -53,6 +54,10 @@ namespace Aerit.MAVLink.Generator
                     builder.Clear();
                 }
             }
+
+            CRCExtraGenerator.Run(config.Namespace, messages, builder);
+            File.WriteAllText(Path.Combine(config.Destination.Generated, "CRCExtra.cs"), builder.ToString());
+            builder.Clear();
         }
     }
 }

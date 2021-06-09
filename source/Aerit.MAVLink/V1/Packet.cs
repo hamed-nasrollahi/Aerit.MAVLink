@@ -10,33 +10,51 @@ namespace Aerit.MAVLink.V1
 
         public byte Sequence { get; init; }
 
-        public byte SystemID { get; init; }
+        public byte SystemId { get; init; }
 
-        public byte ComponentID { get; init; }
+        public byte ComponentId { get; init; }
 
-        public byte MessageID { get; init; }
+        public byte MessageId { get; init; }
 
         public ReadOnlyMemory<byte> Payload { get; init; }
 
         public ushort Checksum { get; init; }
 
-        public bool Validate(byte messageCRCExtra)
+        public bool Validate()
         {
+            var messageCRCExtra = CRCExtra.GetByMessageId(MessageId);
+            if (messageCRCExtra is null)
+            {
+                return false;
+            }
+
             var crc = Utils.Checksum.Compute(Length);
 
             crc = Utils.Checksum.Compute(Sequence, crc);
-            crc = Utils.Checksum.Compute(SystemID, crc);
-            crc = Utils.Checksum.Compute(ComponentID, crc);
-            crc = Utils.Checksum.Compute(MessageID, crc);
+            crc = Utils.Checksum.Compute(SystemId, crc);
+            crc = Utils.Checksum.Compute(ComponentId, crc);
+            crc = Utils.Checksum.Compute(MessageId, crc);
 
             foreach (var b in Payload.Span)
             {
                 crc = Utils.Checksum.Compute(b, crc);
             }
 
-            crc = Utils.Checksum.Compute(messageCRCExtra, crc);
+            crc = Utils.Checksum.Compute(messageCRCExtra.Value, crc);
 
             return Checksum == crc;
+        }
+
+        public static byte? DeserializeMessageId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < 6)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[5];
         }
 
         public static Packet? Deserialize(ReadOnlyMemory<byte> buffer)
@@ -50,9 +68,9 @@ namespace Aerit.MAVLink.V1
 
             var length = span[1];
             var sequence = span[2];
-            var systemID = span[3];
-            var componentID = span[4];
-            var messageID = span[5];
+            var systemId = span[3];
+            var componentId = span[4];
+            var messageId = span[5];
 
             if (buffer.Length < (8 + length))
             {
@@ -68,9 +86,9 @@ namespace Aerit.MAVLink.V1
             {
                 Length = length,
                 Sequence = sequence,
-                SystemID = systemID,
-                ComponentID = componentID,
-                MessageID = messageID,
+                SystemId = systemId,
+                ComponentId = componentId,
+                MessageId = messageId,
                 Payload = payload,
                 Checksum = checksum
             };

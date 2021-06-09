@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Security.Cryptography;
 
 namespace Aerit.MAVLink.V2
 {
@@ -15,6 +16,61 @@ namespace Aerit.MAVLink.V2
     {
     }
 
+    public record Signature
+    {
+        public byte LinkId { get; init; }
+
+        public ulong TimeStamp48 { get; init; }
+
+        public ulong Signature48 { get; init; }
+
+        public static Signature Deserialize(ReadOnlySpan<byte> buffer)
+        {
+            var linkId = buffer[0];
+
+            var timeStamp48 = buffer[1]
+                | (ulong)buffer[2] << 8
+                | (ulong)buffer[3] << 16
+                | (ulong)buffer[4] << 24
+                | (ulong)buffer[5] << 32
+                | (ulong)buffer[6] << 40;
+
+            var signature48 = buffer[7]
+                | (ulong)buffer[8] << 8
+                | (ulong)buffer[9] << 16
+                | (ulong)buffer[10] << 24
+                | (ulong)buffer[11] << 32
+                | (ulong)buffer[12] << 40;
+
+            return new()
+            {
+                LinkId = linkId,
+                TimeStamp48 = timeStamp48,
+                Signature48 = signature48
+            };
+        }
+
+        public static ulong Compute(ReadOnlySpan<byte> key, ReadOnlySpan<byte> data)
+        {
+            Span<byte> buffer = stackalloc byte[32 + data.Length];
+            Span<byte> destination = stackalloc byte[32];
+
+            key.CopyTo(buffer);
+            data.CopyTo(buffer[32..]);
+
+            using var sha256 = SHA256.Create();
+
+            sha256.TryComputeHash(buffer, destination, out _);
+
+            return destination[0]
+                | (ulong)destination[1] << 8
+                | (ulong)destination[2] << 16
+                | (ulong)destination[3] << 24
+                | (ulong)destination[4] << 32
+                | (ulong)destination[5] << 40;
+        }
+    }
+
     public record Packet
     {
         public byte Length { get; init; }
@@ -25,39 +81,59 @@ namespace Aerit.MAVLink.V2
 
         public byte Sequence { get; init; }
 
-        public byte SystemID { get; init; }
+        public byte SystemId { get; init; }
 
-        public byte ComponentID { get; init; }
+        public byte ComponentId { get; init; }
 
-        public uint MessageID { get; init; }
+        public uint MessageId { get; init; }
 
         public ReadOnlyMemory<byte> Payload { get; init; }
 
         public ushort Checksum { get; init; }
 
-        public ReadOnlyMemory<byte>? Signature { get; init; }
+        public Signature? Signature { get; init; }
 
-        public bool Validate(byte messageCRCExtra)
+        public bool Validate()
         {
+            var messageCRCExtra = CRCExtra.GetByMessageId(MessageId);
+            if (messageCRCExtra is null)
+            {
+                return false;
+            }
+
             var crc = Utils.Checksum.Compute(Length);
 
             crc = Utils.Checksum.Compute((byte)Incompatibility, crc);
             crc = Utils.Checksum.Compute((byte)Compatibility, crc);
             crc = Utils.Checksum.Compute(Sequence, crc);
-            crc = Utils.Checksum.Compute(SystemID, crc);
-            crc = Utils.Checksum.Compute(ComponentID, crc);
-            crc = Utils.Checksum.Compute((byte)MessageID, crc);
-            crc = Utils.Checksum.Compute((byte)(MessageID >> 8), crc);
-            crc = Utils.Checksum.Compute((byte)(MessageID >> 16), crc);
+            crc = Utils.Checksum.Compute(SystemId, crc);
+            crc = Utils.Checksum.Compute(ComponentId, crc);
+            crc = Utils.Checksum.Compute((byte)MessageId, crc);
+            crc = Utils.Checksum.Compute((byte)(MessageId >> 8), crc);
+            crc = Utils.Checksum.Compute((byte)(MessageId >> 16), crc);
 
             foreach (var b in Payload.Span)
             {
                 crc = Utils.Checksum.Compute(b, crc);
             }
 
-            crc = Utils.Checksum.Compute(messageCRCExtra, crc);
+            crc = Utils.Checksum.Compute(messageCRCExtra.Value, crc);
 
             return Checksum == crc;
+        }
+
+        public static uint? DeserializeMessageId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < 10)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[7]
+                | (uint)span[8] << 8
+                | (uint)span [9] << 16;
         }
 
         public static Packet? Deserialize(ReadOnlyMemory<byte> buffer)
@@ -73,10 +149,10 @@ namespace Aerit.MAVLink.V2
             var incompatibility = (IncompatibilityFlags)span[2];
             var compatibility = (CompatibilityFlags)span[3];
             var sequence = span[4];
-            var systemID = span[5];
-            var componentID = span[6];
+            var systemId = span[5];
+            var componentId = span[6];
 
-            var messageID = span[7]
+            var messageId = span[7]
                 | (uint)span[8] << 8
                 | (uint)span [9] << 16;
 
@@ -90,7 +166,7 @@ namespace Aerit.MAVLink.V2
             var checksum = (ushort)(span[length + 10]
                 | span[length + 11] << 8);
 
-            ReadOnlyMemory<byte>? signature = null;
+            Signature? signature = null;
             if ((incompatibility & IncompatibilityFlags.Signed) != 0)
             {
                 if (buffer.Length != (12 + length + 13))
@@ -98,7 +174,7 @@ namespace Aerit.MAVLink.V2
                     return null;
                 }
 
-                signature = buffer.Slice(length + 12, 13);
+                signature = Signature.Deserialize(span.Slice(length + 12, 13));
             }
 
             return new()
@@ -107,9 +183,9 @@ namespace Aerit.MAVLink.V2
                 Incompatibility = incompatibility,
                 Compatibility = compatibility,
                 Sequence = sequence,
-                SystemID = systemID,
-                ComponentID = componentID,
-                MessageID = messageID,
+                SystemId = systemId,
+                ComponentId = componentId,
+                MessageId = messageId,
                 Payload = payload,
                 Checksum = checksum,
                 Signature = signature

@@ -24,12 +24,14 @@ class Build : NukeBuild
     [Solution] readonly Solution Solution;
     //[GitRepository] readonly GitRepository GitRepository;
 
-    AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink/message_definitions/v1.0";
+    AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink" / "message_definitions" / "v1.0";
 
     AbsolutePath SourceDirectory => RootDirectory / "source";
 
-    AbsolutePath EnumsDestination => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Enums";
-    AbsolutePath MessagesDestination => SourceDirectory / "Aerit.MAVLink" / "Generated" / "Messages";
+    AbsolutePath GeneratedDestination => SourceDirectory / "Aerit.MAVLink" / "Generated";
+    AbsolutePath EnumsDestination => GeneratedDestination / "Enums";
+    AbsolutePath MessagesDestination => GeneratedDestination / "Messages";
+
     AbsolutePath TestsDestination => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
 
     //AbsolutePath OutputDirectory => RootDirectory / "output";
@@ -48,6 +50,7 @@ class Build : NukeBuild
 
             EnsureCleanDirectory(EnumsDestination);
             EnsureCleanDirectory(MessagesDestination);
+            EnsureCleanDirectory(GeneratedDestination);
             EnsureCleanDirectory(TestsDestination);
 
             //EnsureCleanDirectory(OutputDirectory);
@@ -56,13 +59,16 @@ class Build : NukeBuild
     Target Generate => _ => _
         .Executes(() =>
         {
+            EnsureExistingDirectory(GeneratedDestination);
             EnsureExistingDirectory(EnumsDestination);
             EnsureExistingDirectory(MessagesDestination);
             EnsureExistingDirectory(TestsDestination);
 
             Generator.Run(new(
+                //Definitions: (DefinitionsDirectory, "minimal.xml"),
                 Definitions: (DefinitionsDirectory, "common.xml"),
                 Destination: new(
+                    Generated: GeneratedDestination,
                     Enums: EnumsDestination,
                     Messages: MessagesDestination,
                     Tests: TestsDestination),

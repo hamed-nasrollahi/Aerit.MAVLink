@@ -17,16 +17,23 @@ namespace Aerit.MAVLink.Generator
                 builder.AppendLine("using System.Text;");
             }
 
+            builder.AppendLine("using System.Buffers;");
+
             if (message.Fields.Any(o => o.Type.Name == "double"
                 || o.Type.Name == "float"))
             {
                 builder.AppendLine("using System.Buffers.Binary;");
             }
 
+            builder.AppendLine("using System.Threading.Tasks;");
+
             builder.AppendLine();
 
             builder.AppendLine($"namespace {ns}");
             builder.AppendLine("{");
+            builder.AppendLine("    using PacketV1 = V1.Packet;");
+            builder.AppendLine("    using PacketV2 = V2.Packet;");
+            builder.AppendLine();
 
             if (message.Description is not null)
             {
@@ -51,19 +58,19 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine("    {");
 
             builder.AppendLine("        #region Message Definition");
-            builder.AppendLine($@"        public static uint MessageID {{ get; }} = {message.ID};");
+            builder.AppendLine($"        public const uint MAVLinkMessageId = {message.ID};");
 
             builder.AppendLine();
 
-            builder.AppendLine($@"        public static byte MessageBaseLength {{ get; }} = {message.BaseLength};");
+            builder.AppendLine($@"        public const byte MAVLinkMessageBaseLength = {message.BaseLength};");
 
             builder.AppendLine();
 
-            builder.AppendLine($@"        public static byte MessageLength {{ get; }} = {message.Length};");
+            builder.AppendLine($"        public const byte MAVLinkMessageLength = {message.Length};");
 
             builder.AppendLine();
 
-            builder.AppendLine($@"        public static byte MessageCRCExtra {{ get; }} = {message.CRC};");
+            builder.AppendLine($"        public const byte MAVLinkMessageCRCExtra = {message.CRC};");
             builder.AppendLine("        #endregion");
 
             foreach (var field in message.Fields)
@@ -122,10 +129,8 @@ namespace Aerit.MAVLink.Generator
 
             builder.AppendLine();
 
-            builder.AppendLine("        public Memory<byte> Serialize(Memory<byte> buffer)");
+            builder.AppendLine("        public void Serialize(Span<byte> buffer)");
             builder.AppendLine("        {");
-            builder.AppendLine("            var span = buffer.Span;");
-            builder.AppendLine();
 
             var index = 0;
 
@@ -146,25 +151,25 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 24);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 32);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 40);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 48);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName}[{i}] >> 56);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 32);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 40);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 48);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName}[{i}] >> 56);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 24);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 32);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 40);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 48);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 56);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 32);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 40);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 48);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 56);");
                                 }
                             }
                         }
@@ -172,25 +177,25 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 24);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 32);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 40);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 48);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ulong){fieldName} >> 56);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 32);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 40);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 48);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ulong){fieldName} >> 56);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 24);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 32);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 40);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 48);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 56);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 32);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 40);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 48);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 56);");
                             }
                         }
                         break;
@@ -202,25 +207,25 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 24);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 32);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 40);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 48);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName}[{i}] >> 56);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 32);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 40);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 48);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName}[{i}] >> 56);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 24);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 32);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 40);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 48);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 56);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 32);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 40);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 48);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 56);");
                                 }
                             }
                         }
@@ -228,25 +233,25 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 24);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 32);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 40);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 48);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((long){fieldName} >> 56);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 32);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 40);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 48);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((long){fieldName} >> 56);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 24);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 32);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 40);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 48);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 56);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 32);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 40);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 48);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 56);");
                             }
                         }
                         break;
@@ -256,13 +261,13 @@ namespace Aerit.MAVLink.Generator
                         {
                             for (var i = 0; i < field.Type.Length; i++)
                             {
-                                builder.AppendLine($@"            BinaryPrimitives.WriteDoubleBigEndian(span.Slice({index}, 8), {fieldName}[{i}]);");
+                                builder.AppendLine($@"            BinaryPrimitives.WriteDoubleBigEndian(buffer.Slice({index}, 8), {fieldName}[{i}]);");
                                 index += 8;
                             }
                         }
                         else
                         {
-                            builder.AppendLine($@"            BinaryPrimitives.WriteDoubleBigEndian(span.Slice({index}, 8), {fieldName});");
+                            builder.AppendLine($@"            BinaryPrimitives.WriteDoubleBigEndian(buffer.Slice({index}, 8), {fieldName});");
                             index += 8;
                         }
                         break;
@@ -274,17 +279,17 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName}[{i}] >> 24);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 24);");
                                 }
                             }
                         }
@@ -292,17 +297,17 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((uint){fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((uint){fieldName} >> 24);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 24);");
                             }
                         }
                         break;
@@ -314,17 +319,17 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName}[{i}] >> 24);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 16);");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 24);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 16);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 24);");
                                 }
                             }
                         }
@@ -332,17 +337,17 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((int){fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((int){fieldName} >> 24);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 16);");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 24);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 16);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 24);");
                             }
                         }
                         break;
@@ -352,13 +357,13 @@ namespace Aerit.MAVLink.Generator
                         {
                             for (var i = 0; i < field.Type.Length; i++)
                             {
-                                builder.AppendLine($@"            BinaryPrimitives.WriteSingleBigEndian(span.Slice({index}, 4), {fieldName}[{i}]);");
+                                builder.AppendLine($@"            BinaryPrimitives.WriteSingleBigEndian(buffer.Slice({index}, 4), {fieldName}[{i}]);");
                                 index += 4;
                             }
                         }
                         else
                         {
-                            builder.AppendLine($@"            BinaryPrimitives.WriteSingleBigEndian(span.Slice({index}, 4), {fieldName});");
+                            builder.AppendLine($@"            BinaryPrimitives.WriteSingleBigEndian(buffer.Slice({index}, 4), {fieldName});");
                             index += 4;
                         }
                         break;
@@ -370,13 +375,13 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((ushort){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((ushort){fieldName}[{i}] >> 8);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
                                 }
                             }
                         }
@@ -384,13 +389,13 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((ushort){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((ushort){fieldName} >> 8);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
                             }
                         }
                         break;
@@ -402,13 +407,13 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)((short){fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)((short){fieldName}[{i}] >> 8);");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
-                                    builder.AppendLine($@"            span[{index++}] = (byte)({fieldName}[{i}] >> 8);");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName}[{i}] >> 8);");
                                 }
                             }
                         }
@@ -416,13 +421,13 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)((short){fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)((short){fieldName} >> 8);");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
-                                builder.AppendLine($@"            span[{index++}] = (byte)({fieldName} >> 8);");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte)({fieldName} >> 8);");
                             }
                         }
                         break;
@@ -434,11 +439,11 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = {fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = {fieldName}[{i}];");
                                 }
                             }
                         }
@@ -446,11 +451,11 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = {fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = {fieldName};");
                             }
                         }
                         break;
@@ -462,11 +467,11 @@ namespace Aerit.MAVLink.Generator
                             {
                                 if (field.Enum is not null)
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
                                 }
                                 else
                                 {
-                                    builder.AppendLine($@"            span[{index++}] = (byte){fieldName}[{i}];");
+                                    builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName}[{i}];");
                                 }
                             }
                         }
@@ -474,11 +479,11 @@ namespace Aerit.MAVLink.Generator
                         {
                             if (field.Enum is not null)
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
                             }
                             else
                             {
-                                builder.AppendLine($@"            span[{index++}] = (byte){fieldName};");
+                                builder.AppendLine($@"            buffer[{index++}] = (byte){fieldName};");
                             }
                         }
                         break;
@@ -486,12 +491,12 @@ namespace Aerit.MAVLink.Generator
                     case "char":
                         builder.AppendLine($@"            if ({fieldName}.Length < {field.Type.Length})");
                         builder.AppendLine("            {");
-                        builder.AppendLine($@"                Encoding.ASCII.GetBytes({fieldName}, span.Slice({index}, {fieldName}.Length));");
-                        builder.AppendLine($@"                span[({index} + {fieldName}.Length)..({index} + {field.Type.Length})].Fill(0x00);");
+                        builder.AppendLine($@"                Encoding.ASCII.GetBytes({fieldName}, buffer.Slice({index}, {fieldName}.Length));");
+                        builder.AppendLine($@"                buffer[({index} + {fieldName}.Length)..({index} + {field.Type.Length})].Fill(0x00);");
                         builder.AppendLine("            }");
                         builder.AppendLine("            else");
                         builder.AppendLine("            {");
-                        builder.AppendLine($@"                Encoding.ASCII.GetBytes({fieldName}.AsSpan(0, {field.Type.Length}), span.Slice({index}, {field.Type.Length}));");
+                        builder.AppendLine($@"                Encoding.ASCII.GetBytes({fieldName}.AsSpan(0, {field.Type.Length}), buffer.Slice({index}, {field.Type.Length}));");
                         builder.AppendLine("            }");
 
                         index += field.Type.Length ?? 0;
@@ -499,7 +504,7 @@ namespace Aerit.MAVLink.Generator
                         break;
 
                     case "uint8_t_mavlink_version":
-                        builder.AppendLine($@"            span[{index++}] = {fieldName};");
+                        builder.AppendLine($@"            buffer[{index++}] = {fieldName};");
                         break;
 
                     default:
@@ -507,16 +512,6 @@ namespace Aerit.MAVLink.Generator
                 }
             }
 
-            builder.AppendLine();
-            builder.AppendLine("            var payload = buffer.TrimEnd((byte)0x00);");
-            builder.AppendLine("            if (payload.Length > 0)");
-            builder.AppendLine("            {");
-            builder.AppendLine("                return payload;");
-            builder.AppendLine("            }");
-            builder.AppendLine();
-            builder.AppendLine("            span[0] = 0x00;");
-            builder.AppendLine();
-            builder.AppendLine("            return buffer.Slice(0, 1);");
             builder.AppendLine("        }");
 
             builder.AppendLine();
@@ -1122,7 +1117,7 @@ namespace Aerit.MAVLink.Generator
 
                 builder.AppendLine();
 
-                assignments.Add($"              {fieldName} = {fieldLowerName}");
+                assignments.Add($"                {fieldName} = {fieldLowerName}");
             }
 
             builder.AppendLine("            return new()");
@@ -1130,8 +1125,83 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine(string.Join(",\n", assignments));
             builder.AppendLine("            };");
             builder.AppendLine("        }");
-
             builder.AppendLine("    }");
+
+            builder.AppendLine();
+
+            builder.AppendLine("    public partial class Client");
+            builder.AppendLine("    {");
+            builder.AppendLine($"        public Task SendAsync({name} message)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            var buffer = ArrayPool<byte>.Shared.Rent(280);");
+            builder.AppendLine();
+            builder.AppendLine($"            var payload = buffer.AsSpan().Slice(10, {name}.MAVLinkMessageLength);");
+            builder.AppendLine("            message.Serialize(payload);");
+            builder.AppendLine("            payload = payload.TrimEnd((byte)0x00);");
+            builder.AppendLine();
+            builder.AppendLine("            var length = Math.Max(payload.Length, 1);");
+            builder.AppendLine();
+            builder.AppendLine("            buffer[0] = (byte)Magic.V2;");
+            builder.AppendLine("            buffer[1] = (byte)length;");
+            builder.AppendLine("            buffer[2] = 0x00;");
+            builder.AppendLine("            buffer[3] = 0x00;");
+            builder.AppendLine("            buffer[4] = 0x00;");
+            builder.AppendLine("            buffer[5] = systemId;");
+            builder.AppendLine("            buffer[6] = componentId;");
+            builder.AppendLine();
+            builder.AppendLine($"            var messageID = {name}.MAVLinkMessageId;");
+            builder.AppendLine("            buffer[7] = (byte)messageID;");
+            builder.AppendLine("            buffer[8] = (byte)(messageID >> 8);");
+            builder.AppendLine("            buffer[9] = (byte)(messageID >> 16);");
+            builder.AppendLine();
+            builder.AppendLine($"            buffer[length + 10] = {name}.MAVLinkMessageCRCExtra;");
+            builder.AppendLine();
+            builder.AppendLine("            return SendAsync(buffer);");
+            builder.AppendLine("        }");
+            builder.AppendLine("    }");
+
+            builder.AppendLine();
+            builder.AppendLine("#nullable enable");
+            builder.AppendLine();
+
+            builder.AppendLine($"    public class {name}Middleware : IPacketMapBranch, IMessageMiddlewareOutput<{name}>");
+            builder.AppendLine("    {");
+            builder.AppendLine($@"        public IMessageMiddleware<{name}>? Next {{ get; set; }}");
+            builder.AppendLine();
+            builder.AppendLine("        public bool Eval(PacketV1 packet)");
+            if (message.ID <= 255)
+            {
+                builder.AppendLine($"            => packet.MessageId == {name}.MAVLinkMessageId;");
+            }
+            else
+            {
+                builder.AppendLine("            => false;");
+            }
+            builder.AppendLine();
+            builder.AppendLine("        public bool Eval(PacketV2 packet)");
+            builder.AppendLine($"            => packet.MessageId == {name}.MAVLinkMessageId;");
+            builder.AppendLine();
+            builder.AppendLine("        public Task<bool> ProcessAsync(PacketV1 packet)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            if (Next is null)");
+            builder.AppendLine("            {");
+            builder.AppendLine("                return Task.FromResult(false);");
+            builder.AppendLine("            }");
+            builder.AppendLine();
+            builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span));");
+            builder.AppendLine("        }");
+            builder.AppendLine();
+            builder.AppendLine("        public Task<bool> ProcessAsync(PacketV2 packet)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            if (Next is null)");
+            builder.AppendLine("            {");
+            builder.AppendLine("                return Task.FromResult(false);");
+            builder.AppendLine("            }");
+            builder.AppendLine();
+            builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span));");
+            builder.AppendLine("        }");
+            builder.AppendLine("    }");
+
             builder.Append('}');
 
             return name;
