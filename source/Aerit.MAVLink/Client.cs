@@ -92,6 +92,18 @@ namespace Aerit.MAVLink
             }
         }
 
+        public CommandContext? Submit(CommandLong command)
+        {
+			var handler = commandHandlers.GetOrAdd(command.TargetSystem, command.TargetComponent, command.Command);
+
+            if (!handler.TryAcquire())
+            {
+				return null;
+			}
+
+			return new CommandContext(handler, command);
+		}
+
         public async Task ListenAsync(IBufferMiddleware pipeline)
         {
             try

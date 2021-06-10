@@ -21,11 +21,17 @@ namespace Aerit.MAVLink
         private readonly Channel<CommandAck> channel = Channel.CreateUnbounded<CommandAck>();
 
         private readonly ICommandClient client;
+		private readonly int sequenceTimeout;
+		private readonly byte retry;
+		private readonly int inProgressTimeout;
 
-        public CommandHandler(ICommandClient client)
+		public CommandHandler(ICommandClient client, int sequenceTimeout, byte retry, int inProgressTimeout)
         {
             this.client = client;
-        }
+			this.sequenceTimeout = sequenceTimeout;
+			this.retry = retry;
+			this.inProgressTimeout = inProgressTimeout;
+		}
 
         private int acquired = 0;
         private bool enabled = false;
@@ -50,7 +56,7 @@ namespace Aerit.MAVLink
             return true;
         }
 
-        private async Task<CommandAck?> RunSequenceAsync(CommandContext context, int timeout, byte retry, CancellationToken token)
+        private async Task<CommandAck?> RunSequenceAsync(CommandContext context, CancellationToken token)
         {
             byte confirmation = 0;
 
@@ -63,7 +69,7 @@ namespace Aerit.MAVLink
 
                 using var timeoutCancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
 
-                timeoutCancellation.CancelAfter(timeout);
+                timeoutCancellation.CancelAfter(sequenceTimeout);
 
                 try
                 {
@@ -96,13 +102,13 @@ namespace Aerit.MAVLink
             } while (true);
         }
 
-        private async Task<CommandAck?> RunInProgressAsync(int timeout)
+        private async Task<CommandAck?> RunInProgressAsync()
         {
             do
             {
                 using var timeoutCancellation = new CancellationTokenSource();
 
-                timeoutCancellation.CancelAfter(timeout);
+                timeoutCancellation.CancelAfter(inProgressTimeout);
 
                 try
                 {
@@ -124,7 +130,7 @@ namespace Aerit.MAVLink
             } while (true);
         }
 
-        public async Task RunAsync(CommandContext context, int sequenceTimeout, byte retry, int inProgressTimeout, CancellationToken token)
+        public async Task RunAsync(CommandContext context, CancellationToken token)
         {
             try
             {
@@ -139,7 +145,7 @@ namespace Aerit.MAVLink
 
                 await client.SendAsync(context.CommandLong);
 
-                var ack = await RunSequenceAsync(context, sequenceTimeout, retry, token).ConfigureAwait(false);
+                var ack = await RunSequenceAsync(context, token).ConfigureAwait(false);
                 if (ack is null)
                 {
                     return;
@@ -152,7 +158,7 @@ namespace Aerit.MAVLink
                     return;
                 }
 
-                ack = await RunInProgressAsync(inProgressTimeout);
+                ack = await RunInProgressAsync();
                 if (ack is not null)
                 {
                     context.Result = ack.Result;
@@ -187,23 +193,20 @@ namespace Aerit.MAVLink
 
         private readonly CommandHandler handler;
 
-        public CommandContext(CommandHandler handler, CommandLong commandLong)
+		private readonly Task? background;
+
+		public CommandContext(CommandHandler handler, CommandLong commandLong)
         {
             this.handler = handler;
 
             CommandLong = commandLong;
+
+            background = handler.RunAsync(this, cancellation.Token);
         }
 
         public CommandLong CommandLong { get; }
 
         public MavResult? Result { get; set; }
-
-        Task? task = null;
-
-        public void Submit()
-        {
-            task = handler.RunAsync(this, 1000, 3, 1000, cancellation.Token);
-        }
 
         public Task WaitAsync(CancellationToken token = default)
             => handler.WaitAsync(token);
@@ -227,17 +230,23 @@ namespace Aerit.MAVLink
 
         public async ValueTask DisposeAsync()
         {
-            if (task is not null)
+            if (background is not null)
             {
-                await task;
+                await background;
             }
 
             cancellation.Dispose();
-        }
+
+			handler.Release();
+		}
     }
 
     public sealed class CommandHandlerRegistry
     {
+		private const int sequenceTimeout = 1000;
+		private const byte retry = 10;
+		private const int inProgressTimeout = 5000;
+
         private readonly ConcurrentDictionary<(byte systemId, byte componentId, MavCmd command), CommandHandler> handlers = new();
 
         private readonly ICommandClient client;
@@ -251,7 +260,7 @@ namespace Aerit.MAVLink
             => handlers.TryGetValue((systemId, componentId, command), out handler);
 
         public CommandHandler GetOrAdd(byte systemId, byte componentId, MavCmd command)
-            => handlers.GetOrAdd((systemId, componentId, command), key => new(client));
+            => handlers.GetOrAdd((systemId, componentId, command), key => new(client, sequenceTimeout, retry, inProgressTimeout));
     }
 
     public sealed class CommandAckEnpoint : IMessageMiddleware<CommandAck>
