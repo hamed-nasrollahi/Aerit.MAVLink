@@ -73,7 +73,10 @@ namespace Aerit.MAVLink.V2
 
     public record Packet
     {
-        public byte Length { get; init; }
+		public const int MinLength = 12;
+		public const int MaxLength = 280;
+
+		public byte Length { get; init; }
 
         public IncompatibilityFlags Incompatibility { get; init; }
 
@@ -138,7 +141,7 @@ namespace Aerit.MAVLink.V2
 
         public static Packet? Deserialize(ReadOnlyMemory<byte> buffer)
         {
-            if (buffer.Length < 12 || buffer.Length > 280)
+            if (buffer.Length < MinLength || buffer.Length > MaxLength)
             {
                 return null;
             }

@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -8,8 +9,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Tests
 {
-    using Range = Moq.Range;
-    using PacketV2 = V2.Packet;
+    using Packet = V2.Packet;
 
     public class ClientTest
     {
@@ -26,10 +26,10 @@ namespace Aerit.MAVLink.Tests
             byte sequence = 0;
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsInRange(0, 280, Range.Inclusive)))
-                .Callback<byte[], int>((buffer, length) => {
-                    var packet = PacketV2.Deserialize(buffer.AsMemory().Slice(0, length));
-                    if (packet is not null)
+                .Setup(o => o.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
+                .Callback<ReadOnlyMemory<byte>, CancellationToken>((buffer, token) => {
+					var packet = Packet.Deserialize(buffer);
+					if (packet is not null)
                     {
                         systemId = packet.SystemId;
                         componentId = packet.ComponentId;
@@ -47,7 +47,7 @@ namespace Aerit.MAVLink.Tests
 
             // Assert
             transmissionChannel
-                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsInRange(0, 280, Range.Inclusive)), Times.Exactly(5));
+                .Verify(o => o.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()), Times.Exactly(5));
 
             transmissionChannel.VerifyNoOtherCalls();
 
@@ -64,11 +64,11 @@ namespace Aerit.MAVLink.Tests
 
             var transmissionChannel = new Mock<ITransmissionChannel>();
 
-            PacketV2? packet = null;
+            Packet? packet = null;
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsInRange(0, 280, Range.Inclusive)))
-                .Callback<byte[], int>((buffer, length) => packet = PacketV2.Deserialize(buffer.AsMemory().Slice(0, length)));
+                .Setup(o => o.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
+                .Callback<ReadOnlyMemory<byte>, CancellationToken>((buffer, token) => packet = Packet.Deserialize(buffer));
 
             using var sut = new Client(transmissionChannel.Object, 1, 42);
 
@@ -77,7 +77,7 @@ namespace Aerit.MAVLink.Tests
 
             // Assert
             transmissionChannel
-                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsInRange(0, 280, Range.Inclusive)), Times.Once);
+                .Verify(o => o.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()), Times.Once);
 
             transmissionChannel.VerifyNoOtherCalls();
 

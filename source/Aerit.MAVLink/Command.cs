@@ -13,6 +13,8 @@ namespace Aerit.MAVLink
         Task SendAsync(CommandLong message);
 
         Task SendAsync(CommandCancel message);
+
+        Task SendAsync(CommandAck message);
     }
 
     public sealed class CommandHandler : IDisposable
@@ -117,7 +119,7 @@ namespace Aerit.MAVLink
                         return null;
                     }
 
-                    var ack = await channel.Reader.ReadAsync();
+                    var ack = await channel.Reader.ReadAsync(CancellationToken.None);
                     if (ack.Result != MavResult.InProgress)
                     {
                         return ack;
@@ -141,12 +143,12 @@ namespace Aerit.MAVLink
                     Command = context.CommandLong.Command,
                     TargetSystem = context.CommandLong.TargetSystem,
                     TargetComponent = context.CommandLong.TargetComponent
-                }));
+                }).ConfigureAwait(false));
 
-                await client.SendAsync(context.CommandLong);
+                await client.SendAsync(context.CommandLong).ConfigureAwait(false);
 
-                var ack = await RunSequenceAsync(context, token).ConfigureAwait(false);
-                if (ack is null)
+				var ack = await RunSequenceAsync(context, token);
+				if (ack is null)
                 {
                     return;
                 }
@@ -193,7 +195,7 @@ namespace Aerit.MAVLink
 
         private readonly CommandHandler handler;
 
-		private readonly Task? background;
+		private readonly Task background;
 
 		public CommandContext(CommandHandler handler, CommandLong commandLong)
         {
@@ -230,10 +232,7 @@ namespace Aerit.MAVLink
 
         public async ValueTask DisposeAsync()
         {
-            if (background is not null)
-            {
-                await background;
-            }
+            await background;
 
             cancellation.Dispose();
 
