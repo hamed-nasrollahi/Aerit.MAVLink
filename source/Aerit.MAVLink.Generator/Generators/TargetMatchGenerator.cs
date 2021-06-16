@@ -15,12 +15,12 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine("{");
             builder.AppendLine("    public static class Target");
             builder.AppendLine("    {");
-            builder.AppendLine("        public static bool Match(uint messageId, ReadOnlySpan<byte> payload, byte targetSystem, byte componentSystem) => messageId switch");
+            builder.AppendLine("        public static bool Match(uint messageId, ReadOnlySpan<byte> payload, byte? targetSystem, byte? targetComponent) => messageId switch");
             builder.AppendLine("        {");
             foreach (var message in messages)
             {
                 var name = CamelCase(message.Name);
-                builder.AppendLine($"            {name}.MAVLinkMessageId => {name}.Match(payload, targetSystem, componentSystem),");
+                builder.AppendLine($"            {name}.MAVLinkMessageId => {name}.Match(payload, targetSystem, targetComponent),");
             }
             builder.AppendLine("            _ => false");
             builder.AppendLine("        };");

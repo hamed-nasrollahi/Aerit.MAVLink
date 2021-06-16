@@ -521,7 +521,7 @@ namespace Aerit.MAVLink.Generator
 			var assignments = new List<string>();
 
 			int? targetSystemIndex = null;
-			int? componentSystemIndex = null;
+			int? targetComponentIndex = null;
 
 			foreach (var field in message.Fields)
 			{
@@ -1036,7 +1036,7 @@ namespace Aerit.MAVLink.Generator
 								}
 								else if (field.Name == "target_component")
 								{
-									componentSystemIndex = index;
+									targetComponentIndex = index;
 								}
 
 								builder.AppendLine($"            var {fieldLowerName} = (byte)(span.Length >= {index + 1} ? span[{index}] : 0x00);");
@@ -1137,48 +1137,56 @@ namespace Aerit.MAVLink.Generator
 
 			builder.AppendLine();
 
-			builder.AppendLine("        public static bool Match(ReadOnlySpan<byte> span, byte targetSystem, byte componentSystem)");
-			if (targetSystemIndex is not null && componentSystemIndex is not null)
+			builder.AppendLine("        public static bool Match(ReadOnlySpan<byte> span, byte? targetSystem, byte? targetComponent)");
+			if (targetSystemIndex is not null && targetComponentIndex is not null)
 			{
 				builder.AppendLine("        {");
-				builder.AppendLine($"            var messageTargetSystem = (byte)(span.Length >= {targetSystemIndex + 1} ? span[{targetSystemIndex}] : 0x00);");
-				builder.AppendLine($"            var messageComponentSystem = (byte)(span.Length >= {componentSystemIndex + 1} ? span[{componentSystemIndex}] : 0x00);");
-				builder.AppendLine("            if (messageTargetSystem == 0 && messageComponentSystem == 0)");
+				builder.AppendLine("            if (targetSystem is null)");
 				builder.AppendLine("            {");
 				builder.AppendLine("                return true;");
 				builder.AppendLine("            }");
-				builder.AppendLine("            else");
+				builder.AppendLine();
+				builder.AppendLine($"            var messageTargetSystem = (byte)(span.Length >= {targetSystemIndex + 1} ? span[{targetSystemIndex}] : 0x00);");
+				builder.AppendLine("            if (messageTargetSystem != 0 && messageTargetSystem != targetSystem)");
 				builder.AppendLine("            {");
-				builder.AppendLine("                return messageTargetSystem == targetSystem && messageComponentSystem == componentSystem;");
+				builder.AppendLine("                return false;");
 				builder.AppendLine("            }");
+				builder.AppendLine();
+				builder.AppendLine("            if (targetComponent is null)");
+				builder.AppendLine("            {");
+				builder.AppendLine("                return true;");
+				builder.AppendLine("            }");
+				builder.AppendLine();
+				builder.AppendLine($"            var messageTargetComponent = (byte)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
+				builder.AppendLine();
+				builder.AppendLine("            return messageTargetComponent == 0 || messageTargetComponent == targetComponent;");
 				builder.AppendLine("        }");
 			}
 			else if (targetSystemIndex is not null)
 			{
 				builder.AppendLine("        {");
-				builder.AppendLine($"            var messageTargetSystem = (byte)(span.Length >= {targetSystemIndex + 1} ? span[{targetSystemIndex}] : 0x00);");
-				builder.AppendLine("            if (messageTargetSystem == 0)");
+				builder.AppendLine("            if (targetSystem is null)");
 				builder.AppendLine("            {");
 				builder.AppendLine("                return true;");
 				builder.AppendLine("            }");
-				builder.AppendLine("            else");
-				builder.AppendLine("            {");
-				builder.AppendLine("                return messageTargetSystem == targetSystem;");
-				builder.AppendLine("            }");
+				builder.AppendLine();
+				builder.AppendLine($"            var messageTargetSystem = (byte)(span.Length >= {targetSystemIndex + 1} ? span[{targetSystemIndex}] : 0x00);");
+				builder.AppendLine();
+				builder.AppendLine("            return messageTargetSystem == 0 || messageTargetSystem == targetSystem;");
 				builder.AppendLine("        }");
 			}
-			else if (componentSystemIndex is not null)
+			else if (targetComponentIndex is not null)
 			{
+
 				builder.AppendLine("        {");
-				builder.AppendLine($"            var messageComponentSystem = (byte)(span.Length >= {componentSystemIndex + 1} ? span[{componentSystemIndex}] : 0x00);");
-				builder.AppendLine("            if (messageComponentSystem == 0)");
+				builder.AppendLine("            if (targetComponent is null)");
 				builder.AppendLine("            {");
 				builder.AppendLine("                return true;");
 				builder.AppendLine("            }");
-				builder.AppendLine("            else");
-				builder.AppendLine("            {");
-				builder.AppendLine("                return messageComponentSystem == componentSystem;");
-				builder.AppendLine("            }");
+				builder.AppendLine();
+				builder.AppendLine($"            var messageTargetComponent = (byte)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
+				builder.AppendLine();
+				builder.AppendLine("            return messageTargetComponent == 0 || messageTargetComponent == targetComponent;");
 				builder.AppendLine("        }");
 			}
 			else

@@ -1,7 +1,6 @@
 #nullable enable
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -49,8 +48,8 @@ namespace Aerit.MAVLink.Tests
             var transmissionChannel = new Mock<ITransmissionChannel>();
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .Callback<byte[], int, CancellationToken>((buffer, length, token) => pipeline.ProcessAsync(buffer.AsMemory(0, length)));
+                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Callback<byte[], int>((buffer, length) => pipeline.ProcessAsync(buffer.AsMemory(0, length)));
 
             using var client = new Client(transmissionChannel.Object, 1, 42);
 

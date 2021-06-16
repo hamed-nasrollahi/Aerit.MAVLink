@@ -1,7 +1,6 @@
 #nullable enable
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -26,8 +25,8 @@ namespace Aerit.MAVLink.Tests
             byte sequence = 0;
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .Callback<byte[], int, CancellationToken>((buffer, length, token) => {
+                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Callback<byte[], int>((buffer, length) => {
 					var packet = Packet.Deserialize(buffer.AsMemory(0, length));
 					if (packet is not null)
                     {
@@ -47,7 +46,7 @@ namespace Aerit.MAVLink.Tests
 
             // Assert
             transmissionChannel
-                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Exactly(5));
+                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()), Times.Exactly(5));
 
             transmissionChannel.VerifyNoOtherCalls();
 
@@ -67,8 +66,8 @@ namespace Aerit.MAVLink.Tests
             Packet? packet = null;
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .Callback<byte[], int, CancellationToken>((buffer, length, token) => packet = Packet.Deserialize(buffer.AsMemory(0, length)));
+                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Callback<byte[], int>((buffer, length) => packet = Packet.Deserialize(buffer.AsMemory(0, length)));
 
             using var sut = new Client(transmissionChannel.Object, 1, 42);
 
@@ -77,7 +76,7 @@ namespace Aerit.MAVLink.Tests
 
             // Assert
             transmissionChannel
-                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()), Times.Once);
 
             transmissionChannel.VerifyNoOtherCalls();
 

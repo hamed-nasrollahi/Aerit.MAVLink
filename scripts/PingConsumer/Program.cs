@@ -4,15 +4,15 @@ using System.Threading.Tasks;
 
 using Aerit.MAVLink;
 
-using var transmission = new UdpTransmissionChannel(
-    IPEndPoint.Parse("0.0.0.0:4001"),
-	//IPEndPoint.Parse("127.0.0.1:4002")
-	IPEndPoint.Parse("127.0.0.1:3000")
-);
+using var transmission = new UdpTransmissionChannel(IPEndPoint.Parse("0.0.0.0:4001"));
 
-var client = new Client(transmission, 11, 2);
+byte systemId = 10;
+byte componentId = 1;
+
+using var client = new Client(transmission, systemId, componentId);
 
 var pipeline = PipelineBuilder
+    .Append(() => new MatchBufferMiddleware { Target = (systemId, componentId) })
     .Append(() => new PacketMiddleware())
     .Append(() => new PacketValidationMiddleware())
     .Append(() => new PacketMapMiddleware()

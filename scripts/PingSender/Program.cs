@@ -2,17 +2,21 @@
 using System.Net;
 using System.Threading.Tasks;
 
+using NodaTime;
+
 using Aerit.MAVLink;
 
-using var transmission = new UdpTransmissionChannel(
-    IPEndPoint.Parse("0.0.0.0:4002"),
-	//IPEndPoint.Parse("127.0.0.1:4001")
-	IPEndPoint.Parse("127.0.0.1:3000")
-);
+using var transmission = new UdpTransmissionChannel();
 
-var client = new Client(transmission, 11, 1);
+await transmission.ConnectAsync(IPEndPoint.Parse("127.0.0.1:3000"));
+
+byte systemId = 100;
+byte componentId = 1;
+
+var client = new Client(transmission, systemId, componentId);
 
 var pipeline = PipelineBuilder
+    .Append(() => new MatchBufferMiddleware { Target = (systemId, componentId) })
     .Append(() => new PacketMiddleware())
     .Append(() => new PacketValidationMiddleware())
     .Append(() => new PacketMapMiddleware()
@@ -22,7 +26,6 @@ var pipeline = PipelineBuilder
             .Build())
     )
     .Build();
-
 
 await Task.WhenAll(SendPingPeriodicallyAsync(), client.ListenAsync(pipeline));
 
@@ -34,7 +37,7 @@ async Task SendPingPeriodicallyAsync()
     {
 		await client.SendAsync(new Ping
 		{
-            TimeUsec = 42,
+            TimeUsec = (ulong)SystemClock.Instance.GetCurrentInstant().ToUnixTimeMilliseconds(),
             Seq = seq++,
             TargetSystem = 0,
             TargetComponent = 0

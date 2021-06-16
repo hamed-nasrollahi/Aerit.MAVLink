@@ -22,7 +22,7 @@ namespace Aerit.MAVLink
 	{
 		public HashSet<uint>? Ids { get; init; }
 
-		public (byte systemId, byte componentId)? Target { get; init; }
+		public (byte? systemId, byte? componentId)? Target { get; init; }
 
 		public IBufferMiddleware? Next { get; set; }
 
@@ -50,7 +50,7 @@ namespace Aerit.MAVLink
 							break;
 						}
 
-                        if (Target is (byte systemId, byte componentId) && !Match(id.Value, buffer.Span[6..], systemId, componentId))
+                        if (Target is not null && !Match(id.Value, buffer.Span[6..], Target.Value.systemId, Target.Value.componentId))
 						{
 							break;
 						}
@@ -72,7 +72,7 @@ namespace Aerit.MAVLink
 							break;
 						}
 
-                        if (Target is (byte systemId, byte componentId) && !Match(id.Value, buffer.Span[10..], systemId, componentId))
+                        if (Target is not null && !Match(id.Value, buffer.Span[10..], Target.Value.systemId, Target.Value.componentId))
 						{
 							break;
 						}

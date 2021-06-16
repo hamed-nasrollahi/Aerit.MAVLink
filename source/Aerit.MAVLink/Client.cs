@@ -116,13 +116,23 @@ namespace Aerit.MAVLink
 		{
 			try
 			{
+				var completionSource = new TaskCompletionSource<bool>();
+
+				using var registration = token.Register(() => completionSource.TrySetResult(true));
+
 				while (true)
 				{
 					var buffer = ArrayPool<byte>.Shared.Rent(V2.Packet.MaxLength);
 
 					try
 					{
-						var length = await transmissionChannel.ReceiveAsync(buffer, token);
+						var receive = transmissionChannel.ReceiveAsync(buffer);
+						if (receive != await Task.WhenAny(receive, completionSource.Task).ConfigureAwait(false))
+						{
+							break;
+						}
+
+						var length = await receive;
 
 						//TODO: handle bool return
 						var result = await pipeline.ProcessAsync(buffer.AsMemory(0, length));
