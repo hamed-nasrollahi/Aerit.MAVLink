@@ -35,6 +35,7 @@ namespace Aerit.MAVLink.Tests
                 .Returns(true);
 
             var pipeline = PipelineBuilder
+                .Append(() => new MatchBufferMiddleware { Target = (1, 42) })
                 .Append(() => new PacketMiddleware())
                 .Append(() => new PacketValidationMiddleware())
                 .Append(() => new PacketMapMiddleware()
@@ -48,8 +49,8 @@ namespace Aerit.MAVLink.Tests
             var transmissionChannel = new Mock<ITransmissionChannel>();
 
             transmissionChannel
-                .Setup(o => o.SendAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
-                .Callback<ReadOnlyMemory<byte>, CancellationToken>((buffer, token) => pipeline.ProcessAsync(buffer));
+                .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Callback<byte[], int, CancellationToken>((buffer, length, token) => pipeline.ProcessAsync(buffer.AsMemory(0, length)));
 
             using var client = new Client(transmissionChannel.Object, 1, 42);
 

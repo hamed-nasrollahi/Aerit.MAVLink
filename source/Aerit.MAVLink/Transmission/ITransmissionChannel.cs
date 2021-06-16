@@ -8,8 +8,8 @@ namespace Aerit.MAVLink
 {
 	public interface ITransmissionChannel : IDisposable
 	{
-		ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default);
+		ValueTask<int> SendAsync(byte[] buffer, int length, CancellationToken token = default);
 
-		ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken token = default);
+		ValueTask<int> ReceiveAsync(byte[] buffer, CancellationToken token = default);
 	}
 }

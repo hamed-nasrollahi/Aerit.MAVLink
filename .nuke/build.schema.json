@@ -71,6 +71,7 @@
               "Clean",
               "Compile",
               "Generate",
+              "Init",
               "Restore",
               "Test"
             ]
@@ -89,6 +90,7 @@
               "Clean",
               "Compile",
               "Generate",
+              "Init",
               "Restore",
               "Test"
             ]

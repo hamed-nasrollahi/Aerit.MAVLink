@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 using Aerit.MAVLink;
 
 using var transmission = new UdpTransmissionChannel(
-    IPEndPoint.Parse("0.0.0.0:4001"),
-	//IPEndPoint.Parse("127.0.0.1:4002")
+    IPEndPoint.Parse("0.0.0.0:4002"),
+	//IPEndPoint.Parse("127.0.0.1:4001")
 	IPEndPoint.Parse("127.0.0.1:3000")
 );
 
-var client = new Client(transmission, 11, 2);
+var client = new Client(transmission, 11, 1);
 
 var pipeline = PipelineBuilder
     .Append(() => new PacketMiddleware())
@@ -23,7 +23,26 @@ var pipeline = PipelineBuilder
     )
     .Build();
 
-await client.ListenAsync(pipeline);
+
+await Task.WhenAll(SendPingPeriodicallyAsync(), client.ListenAsync(pipeline));
+
+async Task SendPingPeriodicallyAsync()
+{
+	uint seq = 0;
+
+	while (true)
+    {
+		await client.SendAsync(new Ping
+		{
+            TimeUsec = 42,
+            Seq = seq++,
+            TargetSystem = 0,
+            TargetComponent = 0
+		});
+
+		await Task.Delay(5000);
+	}
+}
 
 public class PingEndpoint : IMessageMiddleware<Ping>
 {
@@ -36,14 +55,6 @@ public class PingEndpoint : IMessageMiddleware<Ping>
 
 	public async Task<bool> ProcessAsync(byte systemId, byte componentId, Ping message)
 	{
-		await client.SendAsync(new Ping
-   		{
-			TimeUsec = message.TimeUsec,
-			Seq = message.Seq,
-			TargetSystem = systemId,
-			TargetComponent = componentId	   
-		});
-
 		Console.WriteLine($"{message} from {systemId}/{componentId}");
 
 		return true;

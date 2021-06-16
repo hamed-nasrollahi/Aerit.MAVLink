@@ -42,6 +42,13 @@ class Build : NukeBuild
     [Parameter("Generate tests for deprecated messages")]
     bool TestDeprecated { get; set; }
 
+    Target Init => _ => _
+        .Before(Generate)
+        .Executes(() =>
+        {
+            //git pull --recurse-submodules
+        });
+
     Target Clean => _ => _
         .Before(Generate)
         .Executes(() =>
