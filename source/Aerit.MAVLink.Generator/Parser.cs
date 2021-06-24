@@ -231,7 +231,9 @@ namespace Aerit.MAVLink.Generator
             var include = doc?.Root?.Element("include");
             if (include is not null)
             {
-                var (includedMessages, includedEnums) = Run(path, include!.Value, enumBaseTypes);
+				var includeRootPath = Path.GetPathRoot(include!.Value);
+				var includeFileName = Path.GetFileName(include!.Value);
+				var (includedMessages, includedEnums) = Run(path, include!.Value, enumBaseTypes);
 
                 messages.AddRange(includedMessages);
                 enums.AddRange(includedEnums);

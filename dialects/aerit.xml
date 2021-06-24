@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!--
+Range of IDs:
+	messages: 70000 - 70049
+	commands: 70000 - 70049
+-->
+<mavlink>
+	<include>../mavlink/message_definitions/v1.0/common.xml</include>
+	<!-- <version>1</version> -->
+	<dialect>0</dialect>
+</mavlink>

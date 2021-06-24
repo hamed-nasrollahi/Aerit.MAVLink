@@ -22,11 +22,12 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution] readonly Solution Solution;
-    //[GitRepository] readonly GitRepository GitRepository;
+	//[GitRepository] readonly GitRepository GitRepository;
 
-    AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink" / "message_definitions" / "v1.0";
+	//AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink" / "message_definitions" / "v1.0";
+	AbsolutePath DefinitionsDirectory => RootDirectory / "dialects";
 
-    AbsolutePath SourceDirectory => RootDirectory / "source";
+	AbsolutePath SourceDirectory => RootDirectory / "source";
 
     AbsolutePath GeneratedDestination => SourceDirectory / "Aerit.MAVLink" / "Generated";
     AbsolutePath EnumsDestination => GeneratedDestination / "Enums";
@@ -73,7 +74,8 @@ class Build : NukeBuild
 
             Generator.Run(new(
                 //Definitions: (DefinitionsDirectory, "minimal.xml"),
-                Definitions: (DefinitionsDirectory, "common.xml"),
+                //Definitions: (DefinitionsDirectory, "common.xml"),
+                Definitions: (DefinitionsDirectory, "aerit.xml"),
                 Destination: new(
                     Generated: GeneratedDestination,
                     Enums: EnumsDestination,
