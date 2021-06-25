@@ -1,11 +1,21 @@
 <?xml version="1.0"?>
 <!--
 Range of IDs:
-	messages: 70000 - 70049
-	commands: 70000 - 70049
+	messages: 60100 - 60149
+	commands: 60100 - 60149
 -->
 <mavlink>
 	<include>../mavlink/message_definitions/v1.0/common.xml</include>
 	<!-- <version>1</version> -->
 	<dialect>0</dialect>
+
+	<enums>
+		<enum name="MAV_CMD">
+			<entry value="60100" name="MAV_CMD_DO_DELIVERY" hasLocation="false" isDestination="false">
+				<description>Start Delivery</description>
+				<param index="1" label="Mode" minValue="0">Delivery Mode</param>
+			</entry>
+		</enum>
+	</enums>
+
 </mavlink>

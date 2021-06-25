@@ -22,9 +22,9 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution] readonly Solution Solution;
-	//[GitRepository] readonly GitRepository GitRepository;
+	// [GitRepository] readonly GitRepository GitRepository;
 
-	//AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink" / "message_definitions" / "v1.0";
+	// AbsolutePath DefinitionsDirectory => RootDirectory / "mavlink" / "message_definitions" / "v1.0";
 	AbsolutePath DefinitionsDirectory => RootDirectory / "dialects";
 
 	AbsolutePath SourceDirectory => RootDirectory / "source";
@@ -35,7 +35,7 @@ class Build : NukeBuild
 
     AbsolutePath TestsDestination => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
 
-    //AbsolutePath OutputDirectory => RootDirectory / "output";
+    // AbsolutePath OutputDirectory => RootDirectory / "output";
 
     [Parameter("Namespace")]
     string Namespace { get; set; } = "Aerit.MAVLink";
@@ -73,8 +73,7 @@ class Build : NukeBuild
             EnsureExistingDirectory(TestsDestination);
 
             Generator.Run(new(
-                //Definitions: (DefinitionsDirectory, "minimal.xml"),
-                //Definitions: (DefinitionsDirectory, "common.xml"),
+                // Definitions: (DefinitionsDirectory, "common.xml"),
                 Definitions: (DefinitionsDirectory, "aerit.xml"),
                 Destination: new(
                     Generated: GeneratedDestination,
