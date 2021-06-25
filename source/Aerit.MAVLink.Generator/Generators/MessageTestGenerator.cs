@@ -158,6 +158,10 @@ namespace Aerit.MAVLink.Generator
 				builder.AppendLine($"        [InlineData({targetSystem}, {targetComponent ?? "null"}, true)]");
                 builder.AppendLine("        [InlineData(0, 0, false)]");
 			}
+            else
+            {
+                builder.AppendLine("        [InlineData(0, 0, true)]");
+            }
 			builder.AppendLine("        [InlineData(null, null, true)]");
             builder.AppendLine("        public void MatchTarget(int? targetSystem, int? targetComponent, bool expected)");
             builder.AppendLine("        {");
