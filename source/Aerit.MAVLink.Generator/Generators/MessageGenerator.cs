@@ -1136,6 +1136,28 @@ namespace Aerit.MAVLink.Generator
 			builder.AppendLine("        }");
 
 			builder.AppendLine();
+			builder.AppendLine("        public static (byte? targetSystem, byte? targetComponent) DeserializeTarget(ReadOnlySpan<byte> span)");
+			builder.Append($"            => (");
+			if (targetSystemIndex is null)
+			{
+				builder.Append("null");
+			}
+			else
+			{
+				builder.Append($"(byte)(span.Length >= {targetSystemIndex + 1} ? span[{targetSystemIndex}] : 0x00)");
+			}
+			builder.Append(", ");
+			if (targetComponentIndex is null)
+			{
+				builder.Append("null");
+			}
+			else
+			{
+				builder.Append($"(byte)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00)");
+			}
+			builder.AppendLine(");");
+
+			builder.AppendLine();
 
 			builder.AppendLine("        public static bool Match(ReadOnlySpan<byte> span, byte? targetSystem, byte? targetComponent)");
 			if (targetSystemIndex is not null && targetComponentIndex is not null)

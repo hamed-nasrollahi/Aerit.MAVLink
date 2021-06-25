@@ -63,23 +63,19 @@ namespace Aerit.MAVLink.Generator
 
         public static string Run(string ns, MessageDefinition message, StringBuilder builder)
         {
+            var name = CamelCase(message.Name);
+
             builder.AppendLine("using System;");
             builder.AppendLine();
             builder.AppendLine("using Xunit;");
             builder.AppendLine();
-
             builder.AppendLine($"namespace {ns}.Tests");
             builder.AppendLine("{");
-
-            var name = CamelCase(message.Name);
-
             builder.AppendLine($"    public class {name}Test");
             builder.AppendLine("    {");
-
             builder.AppendLine("        [Fact]");
             builder.AppendLine("        public void RoundtripSerialization()");
             builder.AppendLine("        {");
-
             builder.AppendLine("            // Arrange");
             builder.AppendLine($"            Span<byte> buffer = new byte[{name}.MAVLinkMessageLength];");
             builder.AppendLine($"            var messageIn = new {name}()");
@@ -90,7 +86,10 @@ namespace Aerit.MAVLink.Generator
 
             var offset = 0;
 
-            foreach (var field in message.Fields)
+			string? targetSystem = null;
+			string? targetComponent = null;
+
+			foreach (var field in message.Fields)
             {
                 var fieldName = CamelCase(field.Name);
                 if (fieldName == name)
@@ -99,29 +98,82 @@ namespace Aerit.MAVLink.Generator
                 }
 
                 fields.Add(fieldName);
-                assignments.Add($"                {fieldName} = {FieldTestValue(field, offset)}");
+
+				var value = FieldTestValue(field, offset);
+
+				assignments.Add($"                {fieldName} = {value}");
 
                 offset += field.Type.Size * (field.Type.Length ?? 1);
+
+                if (field.Name == "target_system")
+                {
+					targetSystem = value;
+				}
+                else if (field.Name == "target_component")
+                {
+					targetComponent = value;
+                }
             }
 
             builder.AppendLine(string.Join(",\n", assignments));
             builder.AppendLine("            };");
-
             builder.AppendLine();
-
             builder.AppendLine("            // Act");
             builder.AppendLine("            messageIn.Serialize(buffer);");
             builder.AppendLine($"            var messageOut = {name}.Deserialize(buffer);");
-
             builder.AppendLine();
-
             builder.AppendLine("            // Assert");
-
             foreach (var field in fields)
             {
                 builder.AppendLine($"            Assert.Equal(messageIn.{field}, messageOut.{field});");
             }
+            builder.AppendLine("        }");
 
+			builder.AppendLine();
+
+			builder.AppendLine("        [Fact]");
+            builder.AppendLine("        public void DeserializeTarget()");
+            builder.AppendLine("        {");
+            builder.AppendLine("            // Arrange");
+            builder.AppendLine($"            Span<byte> buffer = new byte[{name}.MAVLinkMessageLength];");
+            builder.AppendLine($"            var message = new {name}()");
+            builder.AppendLine("            {");
+            builder.AppendLine(string.Join(",\n", assignments));
+            builder.AppendLine("            };");
+            builder.AppendLine();
+            builder.AppendLine("            // Act");
+            builder.AppendLine("            message.Serialize(buffer);");
+            builder.AppendLine($"            var (targetSystemOut, targetComponentOut) = {name}.DeserializeTarget(buffer);");
+            builder.AppendLine();
+            builder.AppendLine("            // Assert");
+            builder.AppendLine($"            Assert.Equal((byte?){targetSystem ?? "null"}, targetSystemOut);");
+            builder.AppendLine($"            Assert.Equal((byte?){targetComponent ?? "null"}, targetComponentOut);");
+            builder.AppendLine("        }");
+
+			builder.AppendLine();
+
+			builder.AppendLine("        [Theory]");
+			if (targetSystem is not null)
+			{
+				builder.AppendLine($"        [InlineData({targetSystem}, {targetComponent ?? "null"}, true)]");
+                builder.AppendLine("        [InlineData(0, 0, false)]");
+			}
+			builder.AppendLine("        [InlineData(null, null, true)]");
+            builder.AppendLine("        public void MatchTarget(int? targetSystem, int? targetComponent, bool expected)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            // Arrange");
+            builder.AppendLine($"            Span<byte> buffer = new byte[{name}.MAVLinkMessageLength];");
+            builder.AppendLine($"            var message = new {name}()");
+            builder.AppendLine("            {");
+            builder.AppendLine(string.Join(",\n", assignments));
+            builder.AppendLine("            };");
+            builder.AppendLine();
+            builder.AppendLine("            // Act");
+            builder.AppendLine("            message.Serialize(buffer);");
+            builder.AppendLine($"            var match = {name}.Match(buffer, (byte?)targetSystem, (byte?)targetComponent);");
+            builder.AppendLine();
+            builder.AppendLine("            // Assert");
+            builder.AppendLine("            Assert.Equal(expected, match);");
             builder.AppendLine("        }");
 
             builder.AppendLine("    }");
