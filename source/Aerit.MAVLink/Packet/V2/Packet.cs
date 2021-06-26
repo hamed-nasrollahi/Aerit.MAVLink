@@ -73,6 +73,7 @@ namespace Aerit.MAVLink.V2
 
     public record Packet
     {
+		public const int HeaderLength = 10;
 		public const int MinLength = 12;
 		public const int MaxLength = 280;
 
@@ -125,9 +126,33 @@ namespace Aerit.MAVLink.V2
             return Checksum == crc;
         }
 
+        public static byte? DeserializeSystemId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[5];
+        }
+
+        public static byte? DeserializeComponentId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[6];
+        }
+
         public static uint? DeserializeMessageId(ReadOnlyMemory<byte> buffer)
         {
-            if (buffer.Length < 10)
+            if (buffer.Length < MinLength)
             {
                 return null;
             }
@@ -137,6 +162,25 @@ namespace Aerit.MAVLink.V2
             return span[7]
                 | (uint)span[8] << 8
                 | (uint)span [9] << 16;
+        }
+
+        public static ReadOnlyMemory<byte>? SlicePayload(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            var length = span[1];
+
+            if (buffer.Length < (MinLength + length))
+            {
+                return null;
+            }
+
+            return buffer.Slice(HeaderLength, length);
         }
 
         public static Packet? Deserialize(ReadOnlyMemory<byte> buffer)
@@ -159,12 +203,12 @@ namespace Aerit.MAVLink.V2
                 | (uint)span[8] << 8
                 | (uint)span [9] << 16;
 
-            if (buffer.Length < (12 + length))
+            if (buffer.Length < (MinLength + length))
             {
                 return null;
             }
 
-            var payload = buffer.Slice(10, length);
+            var payload = buffer.Slice(HeaderLength, length);
 
             var checksum = (ushort)(span[length + 10]
                 | span[length + 11] << 8);

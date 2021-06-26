@@ -27,11 +27,60 @@ namespace Aerit.MAVLink
 			commandHandlers = new(this);
 		}
 
+		private byte[] InitializeBuffer(uint messageID)
+		{
+			var buffer = ArrayPool<byte>.Shared.Rent(V2.Packet.MaxLength);
+
+			buffer[0] = (byte)Magic.V2;
+
+			buffer[2] = 0x00;
+			buffer[3] = 0x00;
+			buffer[4] = 0x00;
+			buffer[5] = systemId;
+			buffer[6] = componentId;
+
+			buffer[7] = (byte)messageID;
+			buffer[8] = (byte)(messageID >> 8);
+			buffer[9] = (byte)(messageID >> 16);
+
+			return buffer;
+		}
+
+		private SpinLock sequenceLock = new();
 		private byte sequence = 0;
 
-		private int FinalizeBuffer(byte[] buffer)
+		private byte GetSequence()
 		{
-			buffer[4] = sequence;
+			bool entered = false;
+			try
+			{
+				sequenceLock.Enter(ref entered);
+
+				var result = sequence;
+
+				if (sequence == 255)
+				{
+					sequence = 0;
+				}
+				else
+				{
+					sequence++;
+				}
+
+				return result;
+			}
+			finally
+			{
+				if (entered)
+				{
+					sequenceLock.Exit();
+				}
+			}
+		}
+
+		private int FinalizeBuffer(byte[] buffer, byte crcExtra)
+		{
+			buffer[4] = GetSequence();
 
 			var crc = Checksum.Seed;
 
@@ -40,7 +89,7 @@ namespace Aerit.MAVLink
 				crc = Checksum.Compute(buffer[i], crc);
 			}
 
-			crc = Checksum.Compute(buffer[10 + buffer[1]], crc);
+			crc = Checksum.Compute(crcExtra, crc);
 
 			buffer[10 + buffer[1]] = (byte)crc;
 			buffer[11 + buffer[1]] = (byte)(crc >> 8);
@@ -77,22 +126,13 @@ namespace Aerit.MAVLink
 			return length;
 		}
 
-		private async Task SendAsync(byte[] buffer)
+		private async Task SendAsync(byte[] buffer, byte crcExtra)
 		{
 			try
 			{
-				var length = FinalizeBuffer(buffer);
+				var length = FinalizeBuffer(buffer, crcExtra);
 
 				await transmissionChannel.SendAsync(buffer, length).ConfigureAwait(false);
-
-				if (sequence == 255)
-				{
-					sequence = 0;
-				}
-				else
-				{
-					sequence++;
-				}
 			}
 			finally
 			{

@@ -6,7 +6,11 @@ namespace Aerit.MAVLink.V1
 {
     public record Packet
     {
-        public byte Length { get; init; }
+		public const int HeaderLength = 6;
+		public const int MinLength = 8;
+		public const int MaxLength = 263;
+
+		public byte Length { get; init; }
 
         public byte Sequence { get; init; }
 
@@ -45,9 +49,33 @@ namespace Aerit.MAVLink.V1
             return Checksum == crc;
         }
 
+        public static byte? DeserializeSystemId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[3];
+        }
+
+        public static byte? DeserializeComponentId(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            return span[4];
+        }
+
         public static byte? DeserializeMessageId(ReadOnlyMemory<byte> buffer)
         {
-            if (buffer.Length < 6)
+            if (buffer.Length < MinLength)
             {
                 return null;
             }
@@ -57,9 +85,28 @@ namespace Aerit.MAVLink.V1
             return span[5];
         }
 
+        public static ReadOnlyMemory<byte>? SlicePayload(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Length < MinLength)
+            {
+                return null;
+            }
+
+            var span = buffer.Span;
+
+            var length = span[1];
+
+            if (buffer.Length < (MinLength + length))
+            {
+                return null;
+            }
+
+            return buffer.Slice(HeaderLength, length);
+        }
+
         public static Packet? Deserialize(ReadOnlyMemory<byte> buffer)
         {
-            if (buffer.Length < 8 || buffer.Length > 263)
+            if (buffer.Length < MinLength || buffer.Length > MaxLength)
             {
                 return null;
             }
@@ -72,12 +119,12 @@ namespace Aerit.MAVLink.V1
             var componentId = span[4];
             var messageId = span[5];
 
-            if (buffer.Length < (8 + length))
+            if (buffer.Length < (MinLength + length))
             {
                 return null;
             }
 
-            var payload = buffer.Slice(6, length);
+            var payload = buffer.Slice(HeaderLength, length);
 
             var checksum = (ushort)(span[length + 6]
                 | span[length + 7] << 8);
