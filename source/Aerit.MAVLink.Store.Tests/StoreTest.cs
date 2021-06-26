@@ -10,7 +10,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Store.Tests
 {
-	public class StoreTests
+	public class StoreTest
 	{
 		[Fact]
 		public async Task WriterReader()
@@ -30,7 +30,7 @@ namespace Aerit.MAVLink.Store.Tests
 				var indexer = new Mock<IIndexer>();
 
 				indexer
-					.Setup(o => o.Run(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<ReadOnlyMemory<byte>>()))
+					.Setup(o => o.Run(It.IsAny<long>(), It.IsAny<ReadOnlyMemory<byte>>()))
 					.Returns(() =>
 					{
 						var memory = MemoryPool<byte>.Shared.Rent(key.Length);
@@ -54,7 +54,7 @@ namespace Aerit.MAVLink.Store.Tests
 				// Assert
 
 				indexer
-					.Verify(o => o.Run(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
+					.Verify(o => o.Run(It.IsAny<long>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
 
 				using var reader = new Store.Reader(path);
 

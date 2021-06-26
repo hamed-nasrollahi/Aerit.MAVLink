@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Aerit.MAVLink.Store.Tests
 {
-	public class LogTests
+	public class LogTest
 	{
 		[Fact]
 		public async Task WriteRead()

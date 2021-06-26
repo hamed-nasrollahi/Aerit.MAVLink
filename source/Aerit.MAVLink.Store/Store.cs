@@ -47,7 +47,7 @@ namespace Aerit.MAVLink.Store
 
 				foreach (var indexer in indexers)
 				{
-					var key = indexer.Run(address.Value, timestamp, buffer);
+					var key = indexer.Run(timestamp, buffer);
 					if (key.memory is null)
 					{
 						continue;
@@ -65,80 +65,6 @@ namespace Aerit.MAVLink.Store
 						key.memory.Dispose();
 					}
 				}
-
-				/*
-				byte systemId;
-				byte componentId;
-				uint messageID;
-				byte? targetSystem;
-				byte? targetComponent;
-
-				switch ((Magic)buffer.Span[0])
-				{
-					case Magic.V1:
-						{
-							var packet = V1.Packet.Deserialize(buffer);
-							if (packet is null)
-							{
-								return false;
-							}
-
-							systemId = packet.SystemId;
-							componentId = packet.ComponentId;
-							messageID = packet.MessageId;
-
-							(targetSystem, targetComponent) = Target.Deserialize(messageID, packet.Payload.Span);
-
-							break;
-						}
-
-					case Magic.V2:
-						{
-							var packet = V2.Packet.Deserialize(buffer);
-							if (packet is null)
-							{
-								return false;
-							}
-
-							systemId = packet.SystemId;
-							componentId = packet.ComponentId;
-							messageID = packet.MessageId;
-
-							(targetSystem, targetComponent) = Target.Deserialize(messageID, packet.Payload.Span);
-
-							break;
-						}
-
-					default:
-						return false;
-				}
-
-				var (memory, length) = Keys.Compute(systemId, componentId);
-				try
-				{
-					if (!await session.AddAsync(memory.Memory.Slice(0, length), address.Value, token))
-					{
-						//TODO
-					}
-				}
-				finally
-				{
-					memory.Dispose();
-				}
-
-				(memory, length) = Keys.Compute(messageID, targetSystem, targetComponent);
-				try
-				{
-					if (!await session.AddAsync(memory.Memory.Slice(0, length), address.Value, token))
-					{
-						//TODO
-					}
-				}
-				finally
-				{
-					memory.Dispose();
-				}
-				*/
 
 				return true;
 			}
