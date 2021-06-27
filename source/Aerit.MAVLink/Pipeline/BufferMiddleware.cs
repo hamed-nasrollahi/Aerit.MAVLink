@@ -28,6 +28,8 @@ namespace Aerit.MAVLink
 
 		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer)
 		{
+			//TODO: metric incoming
+
 			if (Next is null)
 			{
 				return Task.FromResult(false);
@@ -89,6 +91,8 @@ namespace Aerit.MAVLink
 			{
 				return Task.FromResult(false);
 			}
+
+			//TODO: metric outgoing
 
 			return Next.ProcessAsync(buffer);
 		}

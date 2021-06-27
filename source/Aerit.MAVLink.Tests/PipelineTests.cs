@@ -3,6 +3,9 @@
 using System;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Moq;
 
@@ -34,14 +37,14 @@ namespace Aerit.MAVLink.Tests
                 .Returns(true);
 
             var pipeline = PipelineBuilder
+                .Create(NullLoggerFactory.Instance)
                 .Append(() => new MatchBufferMiddleware { Target = (1, 42) })
-                .Append(() => new PacketMiddleware())
-                .Append(() => new PacketValidationMiddleware())
-                .Append(() => new PacketMapMiddleware()
-                    .Add(() => BranchBuilder
+                .Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
+                .Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger))
+                .Map(map => map
+                    .Add(branch => branch
                         .Append(() => new HeartbeatMiddleware())
-                        .Append(() => endpoint.Object)
-                        .Build())
+                        .Append(() => endpoint.Object))
                 )
                 .Build();
 
@@ -51,7 +54,7 @@ namespace Aerit.MAVLink.Tests
                 .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
                 .Callback<byte[], int>((buffer, length) => pipeline.ProcessAsync(buffer.AsMemory(0, length)));
 
-            using var client = new Client(transmissionChannel.Object, 1, 42);
+            using var client = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
             // Act
             await client.SendAsync(messageIn);

@@ -1,66 +1,137 @@
 using System;
 
+using Microsoft.Extensions.Logging;
+
 namespace Aerit.MAVLink
 {
+    public class PipelineBuilder<T>
+        where T : IMiddleware
+    {
+		internal PipelineBuilder(ILoggerFactory loggerFactory)
+        {
+			ILoggerFactory = loggerFactory;
+		}
+
+		internal ILoggerFactory ILoggerFactory { get; }
+
+		internal T First { get; private set; }
+
+        public (PipelineBuilder<T> builder, TNode last) Append<TNode>(Func<TNode> builder)
+            where TNode : T
+        {
+            var node = builder();
+
+			First = node;
+
+			return (this, node);
+        }
+
+        public (PipelineBuilder<T> builder, TNode last) Append<TNode>(Func<ILogger<TNode>, TNode> builder)
+            where TNode : T
+        {
+            var node = builder(ILoggerFactory.CreateLogger<TNode>());
+
+			First = node;
+
+			return (this, node);
+        }
+	}
+
     public static class PipelineBuilder
     {
-        public static (IBufferMiddleware first, T last) Append<T>(Func<T> builder)
-            where T : IBufferMiddleware
-        {
-            var first = builder();
-
-            return (first, first);
-        }
+		public static PipelineBuilder<IBufferMiddleware> Create(ILoggerFactory loggerFactory)
+			=> new(loggerFactory);
     }
 
     public static class BranchBuilder
     {
-        public static (IPacketMapBranch first, T last) Append<T>(Func<T> builder)
-            where T : IPacketMapBranch
-        {
-            var first = builder();
-
-            return (first, first);
-        }
+		public static PipelineBuilder<IPacketMapBranch> Create(ILoggerFactory loggerFactory)
+			=> new(loggerFactory);
     }
 
     public static class PipelineBuilderExtensions
     {
-        public static T1 Build<T1, T2>(this (T1 first, T2 last) node)
-            where T1 : IMiddleware
-            => node.first;
-
-        public static (T1 first, T2 last) Append<T1, T2>(this (T1 first, IBufferMiddlewareOutput last) node, Func<T2> builder)
-            where T1 : IMiddleware
-            where T2 : IBufferMiddleware
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node, Func<TNode> builder)
+            where T : IMiddleware
+            where TNode : IBufferMiddleware
         {
             var last = builder();
 
             node.last.Next = last;
 
-            return (node.first, last);
+            return (node.builder, last);
         }
 
-        public static (T1 first, T2 last) Append<T1, T2>(this (T1 first, IPacketMiddlewareOutput last) node, Func<T2> builder)
-            where T1 : IMiddleware
-            where T2 : IPacketMiddleware
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node, Func<ILogger<TNode>, TNode> builder)
+            where T : IMiddleware
+            where TNode : IBufferMiddleware
+        {
+            var last = builder(node.builder.ILoggerFactory.CreateLogger<TNode>());
+
+            node.last.Next = last;
+
+            return (node.builder, last);
+        }
+
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Func<TNode> builder)
+            where T : IMiddleware
+            where TNode : IPacketMiddleware
         {
             var last = builder();
 
             node.last.Next = last;
 
-            return (node.first, last);
+            return (node.builder, last);
         }
 
-        public static (T1 first, T2 last) Append<T1, T2, T3>(this (T1 first, IMessageMiddlewareOutput<T3> last) node, Func<T2> builder)
-            where T1 : IMiddleware
-            where T2 : IMessageMiddleware<T3>
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Func<ILogger<TNode>, TNode> builder)
+            where T : IMiddleware
+            where TNode : IPacketMiddleware
+        {
+            var last = builder(node.builder.ILoggerFactory.CreateLogger<TNode>());
+
+            node.last.Next = last;
+
+            return (node.builder, last);
+        }
+
+        public static (PipelineBuilder<T> builder, PacketMapMiddleware last) Map<T>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Action<PacketMapMiddleware> builder)
+            where T : IMiddleware
+        {
+            var map = new PacketMapMiddleware(node.builder.ILoggerFactory);
+
+			builder(map);
+
+			node.last.Next = map;
+
+            return (node.builder, map);
+        }
+
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<TNode> builder)
+            where T : IMiddleware
+            where TNode : IMessageMiddleware<TMessage>
         {
             var last = builder();
 
             node.last.Next = last;
 
-            return (node.first, last);
+            return (node.builder, last);
         }
+
+        public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<ILogger<TNode>, TNode> builder)
+            where T : IMiddleware
+            where TNode : IMessageMiddleware<TMessage>
+        {
+            var last = builder(node.builder.ILoggerFactory.CreateLogger<TNode>());
+
+            node.last.Next = last;
+
+            return (node.builder, last);
+        }
+
+        public static T Build<T, TNode>(this (PipelineBuilder<T> builder, TNode last) node)
+            where T : IMiddleware
+            where TNode : IMiddleware
+            => node.builder.First;
     }
 }

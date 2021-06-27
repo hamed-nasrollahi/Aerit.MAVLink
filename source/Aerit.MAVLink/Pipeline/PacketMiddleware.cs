@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 namespace Aerit.MAVLink
 {
 	public interface IPacketMiddleware : IMiddleware
@@ -20,6 +22,13 @@ namespace Aerit.MAVLink
 
 	public class PacketMiddleware : IBufferMiddleware, IPacketMiddlewareOutput
 	{
+		private readonly ILogger<PacketMiddleware> logger;
+
+		public PacketMiddleware(ILogger<PacketMiddleware> logger)
+		{
+			this.logger = logger;
+		}
+
 		public IPacketMiddleware? Next { get; set; }
 
 		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer)
@@ -33,30 +42,41 @@ namespace Aerit.MAVLink
 			{
 				case Magic.V1:
 					{
+						//TODO: metric v1 incoming
+
 						var packet = V1.Packet.Deserialize(buffer);
 						if (packet is null)
 						{
-							//TODO: metric
+							logger.LogWarning("Unable to deserialize V1 packet");
+
 							return Task.FromResult(false);
 						}
+
+						//TODO: metric v1 outgoing
 
 						return Next.ProcessAsync(packet);
 					}
 
 				case Magic.V2:
 					{
+						//TODO: metric v2 incoming
+
 						var packet = V2.Packet.Deserialize(buffer);
 						if (packet is null)
 						{
+							logger.LogWarning("Unable to deserialize V2 packet");
 							//TODO: metric
 							return Task.FromResult(false);
 						}
+
+						//TODO: metric v2 outgoing
 
 						return Next.ProcessAsync(packet);
 					}
 
 				default:
-					//TODO: metric
+					logger.LogWarning("Unknown packet received");
+					//TODO: metric unknown
 					return Task.FromResult(false);
 			}
 		}
@@ -64,6 +84,13 @@ namespace Aerit.MAVLink
 
 	public class PacketValidationMiddleware : IPacketMiddleware, IPacketMiddlewareOutput
 	{
+		private readonly ILogger<PacketValidationMiddleware> logger;
+
+		public PacketValidationMiddleware(ILogger<PacketValidationMiddleware> logger)
+		{
+			this.logger = logger;
+		}
+
 		public IPacketMiddleware? Next { get; set; }
 
 		public Task<bool> ProcessAsync(V1.Packet packet)
@@ -73,11 +100,16 @@ namespace Aerit.MAVLink
 				return Task.FromResult(false);
 			}
 
+			//TODO: metric v1 incoming
+
 			if (!packet.Validate())
 			{
-				//TODO: metric
+				logger.LogWarning("Unable to validate {packet}", packet);
+
 				return Task.FromResult(false);
 			}
+
+			//TODO: metric v1 outgoing
 
 			return Next.ProcessAsync(packet);
 		}
@@ -89,11 +121,16 @@ namespace Aerit.MAVLink
 				return Task.FromResult(false);
 			}
 
+			//TODO: metric v2 incoming
+
 			if (!packet.Validate())
 			{
-				//TODO: metric
+				logger.LogWarning("Unable to validate {packet}", packet);
+
 				return Task.FromResult(false);
 			}
+
+			//TODO: metric v2 outgoing
 
 			return Next.ProcessAsync(packet);
 		}
@@ -109,13 +146,24 @@ namespace Aerit.MAVLink
 	public class PacketMapMiddleware : IPacketMiddleware
 	{
 		private readonly List<IPacketMapBranch> branches = new();
+		
+		private readonly ILoggerFactory loggerFactory;
+
+		public PacketMapMiddleware(ILoggerFactory loggerFactory)
+		{
+			this.loggerFactory = loggerFactory;
+		}
 
 		public Task<bool> ProcessAsync(V1.Packet packet)
 		{
+			//TODO: metric v1 incoming
+
 			foreach (var branch in branches)
 			{
 				if (branch.Eval(packet))
 				{
+					//TODO: metric v1 outgoing
+
 					return branch.ProcessAsync(packet);
 				}
 			}
@@ -125,10 +173,14 @@ namespace Aerit.MAVLink
 
 		public Task<bool> ProcessAsync(V2.Packet packet)
 		{
+			//TODO: metric v2 incoming
+
 			foreach (var branch in branches)
 			{
 				if (branch.Eval(packet))
 				{
+					//TODO: metric v2 outgoing
+
 					return branch.ProcessAsync(packet);
 				}
 			}
@@ -136,13 +188,12 @@ namespace Aerit.MAVLink
 			return Task.FromResult(false);
 		}
 
-		public PacketMapMiddleware Add(Func<IPacketMapBranch> branch)
+		public PacketMapMiddleware Add<T>(Func<PipelineBuilder<IPacketMapBranch>, (PipelineBuilder<IPacketMapBranch> builder, T last)> builder)
+			where T : IMiddleware
 		{
-			branches.Add(branch());
+			branches.Add(builder(BranchBuilder.Create(loggerFactory)).Build());
 
 			return this;
 		}
-
-		public static PacketMapMiddleware Create() => new();
 	}
 }

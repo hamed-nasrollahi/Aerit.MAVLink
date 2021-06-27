@@ -5,6 +5,8 @@ using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 namespace Aerit.MAVLink
 {
 	using Utils;
@@ -15,14 +17,16 @@ namespace Aerit.MAVLink
 
 	public sealed partial class Client : IHeartbeatClient, ICommandClient, IDisposable
 	{
+		private readonly ILogger<Client> logger;
 		private readonly ITransmissionChannel transmissionChannel;
 		private readonly byte systemId;
 		private readonly byte componentId;
 
 		private readonly CommandHandlerRegistry commandHandlers;
 
-		public Client(ITransmissionChannel transmissionChannel, byte systemId, byte componentId)
+		public Client(ILogger<Client> logger, ITransmissionChannel transmissionChannel, byte systemId, byte componentId)
 		{
+			this.logger = logger;
 			this.transmissionChannel = transmissionChannel;
 			this.systemId = systemId;
 			this.componentId = componentId;
@@ -175,11 +179,12 @@ namespace Aerit.MAVLink
 							break;
 						}
 
-						var length = await receive;
+						//TODO: metric incoming
 
-						//TODO: handle bool return
-						var result = await pipeline.ProcessAsync(buffer.AsMemory(0, length));
-						Console.WriteLine($"Pipeline: {result}");
+						if (await pipeline.ProcessAsync(buffer.AsMemory(0, receive.Result)))
+						{
+							//TODO: metric processed
+						}
 					}
 					finally
 					{
@@ -187,9 +192,9 @@ namespace Aerit.MAVLink
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: logger
+				logger.LogError(ex, "Exception caught");
 			}
 		}
 

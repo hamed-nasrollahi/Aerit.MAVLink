@@ -3,6 +3,8 @@
 using System;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Moq;
 
@@ -35,7 +37,7 @@ namespace Aerit.MAVLink.Tests
 					payload = Packet.SlicePayload(buffer);
 				});
 
-			using var sut = new Client(transmissionChannel.Object, 1, 42);
+			using var sut = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
 			// Act
 			await sut.SendAsync(message);
@@ -74,7 +76,7 @@ namespace Aerit.MAVLink.Tests
 					}
 				});
 
-			using var sut = new Client(transmissionChannel.Object, 1, 42);
+			using var sut = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
 			// Act
 			for (var i = 0; i < 5; i++)
@@ -108,7 +110,7 @@ namespace Aerit.MAVLink.Tests
 				.Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
 				.Callback<byte[], int>((buffer, length) => packet = Packet.Deserialize(buffer.AsMemory(0, length)));
 
-			using var sut = new Client(transmissionChannel.Object, 1, 42);
+			using var sut = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
 			// Act
 			await sut.SendAsync(message);

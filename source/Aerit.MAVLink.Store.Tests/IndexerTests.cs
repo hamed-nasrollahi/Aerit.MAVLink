@@ -3,6 +3,8 @@
 using System.Buffers;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Moq;
 
@@ -27,7 +29,7 @@ namespace Aerit.MAVLink.Store.Tests
 					actual = SourceIndexer.Instance.Run(0, buffer);
 				});
 
-			using var sut = new Client(transmissionChannel.Object, 1, 42);
+			using var sut = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
 			// Act
 			await sut.SendAsync(message);
@@ -73,7 +75,7 @@ namespace Aerit.MAVLink.Store.Tests
 					actual = TargetIndexer.Instance.Run(0, buffer);
 				});
 
-			using var sut = new Client(transmissionChannel.Object, 1, 42);
+			using var sut = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
 			// Act
 			await sut.SendAsync(message);
