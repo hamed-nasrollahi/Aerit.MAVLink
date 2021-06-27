@@ -3,6 +3,7 @@ using Nuke.Common.CI;
 using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
+using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 
@@ -43,11 +44,14 @@ class Build : NukeBuild
     [Parameter("Generate tests for deprecated messages")]
     bool TestDeprecated { get; set; }
 
+    [PathExecutable]
+    readonly Tool Git;
+
     Target Init => _ => _
         .Before(Generate)
         .Executes(() =>
         {
-            //git pull --recurse-submodules
+            Git("pull --recurse-submodules", workingDirectory: RootDirectory / "mavlink");
         });
 
     Target Clean => _ => _
