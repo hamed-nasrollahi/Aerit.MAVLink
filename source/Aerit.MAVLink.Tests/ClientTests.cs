@@ -10,7 +10,7 @@ namespace Aerit.MAVLink.Tests
 {
 	using Packet = V2.Packet;
 
-	public class ClientTest
+	public class ClientTests
 	{
 		[Fact]
 		public async Task PacketBufferHeader()

@@ -8,7 +8,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Store.Tests
 {
-	public class IndexerTest
+	public class IndexerTests
 	{
 		[Fact]
 		public async Task Source()

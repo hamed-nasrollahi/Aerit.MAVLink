@@ -6,7 +6,7 @@ namespace Aerit.MAVLink.Generator
 {
     using static Utils;
 
-    public static class MessageTestGenerator
+    public static class MessageTestsGenerator
     {
         private static string BaseTypeTestValue(FieldType type, int offset, int index)
             => type.Name switch
@@ -71,7 +71,7 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine();
             builder.AppendLine($"namespace {ns}.Tests");
             builder.AppendLine("{");
-            builder.AppendLine($"    public class {name}Test");
+            builder.AppendLine($"    public class {name}Tests");
             builder.AppendLine("    {");
             builder.AppendLine("        [Fact]");
             builder.AppendLine("        public void RoundtripSerialization()");

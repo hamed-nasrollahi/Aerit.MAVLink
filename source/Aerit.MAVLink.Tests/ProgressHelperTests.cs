@@ -7,7 +7,7 @@ using Aerit.MAVLink.Protocols.Command;
 
 namespace Aerit.MAVLink.Tests
 {
-	public class ProgressHelperTest
+	public class ProgressHelperTests
 	{
 		[Fact]
 		public async Task TimeOut()

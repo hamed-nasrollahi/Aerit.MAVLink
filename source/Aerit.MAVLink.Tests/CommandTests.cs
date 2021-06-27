@@ -5,7 +5,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Tests
 {
-    public class CommandTest
+    public class CommandTests
     {
         [Fact]
         public async Task MaxRetry()

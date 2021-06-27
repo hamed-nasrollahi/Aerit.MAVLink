@@ -10,7 +10,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Store.Tests
 {
-	public class StoreTest
+	public class StoreTests
 	{
 		[Fact]
 		public async Task WriterReader()

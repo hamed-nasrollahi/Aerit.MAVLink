@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Aerit.MAVLink.Store.Tests
 {
-    public class IndexStoreTest
+    public class IndexStoreTests
     {
 		[Fact]
 		public async Task Add()

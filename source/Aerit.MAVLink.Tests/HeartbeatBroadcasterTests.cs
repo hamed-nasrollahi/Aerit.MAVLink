@@ -7,7 +7,7 @@ using Aerit.MAVLink.Protocols.Connection;
 
 namespace Aerit.MAVLink.Tests
 {
-	public class HeartbeatBroadcasterTest
+	public class HeartbeatBroadcasterTests
 	{
 		[Fact]
 		public async Task TimeOut()

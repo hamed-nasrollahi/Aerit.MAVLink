@@ -8,7 +8,7 @@ using Moq;
 
 namespace Aerit.MAVLink.Tests
 {
-    public class PipelineTest
+    public class PipelineTests
     {
         [Fact]
         public async Task HeartbeatEndpointRouting()

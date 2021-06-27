@@ -48,9 +48,9 @@ namespace Aerit.MAVLink.Generator
 						continue;
 					}
 
-					name = MessageTestGenerator.Run(config.Namespace, message, builder);
+					name = MessageTestsGenerator.Run(config.Namespace, message, builder);
 
-					File.WriteAllText(Path.Combine(config.Destination.Tests, $"{name}Test.cs"), builder.ToString());
+					File.WriteAllText(Path.Combine(config.Destination.Tests, $"{name}Tests.cs"), builder.ToString());
 
 					builder.Clear();
 				}
