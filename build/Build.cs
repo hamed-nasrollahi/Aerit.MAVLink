@@ -44,14 +44,14 @@ class Build : NukeBuild
     [Parameter("Generate tests for deprecated messages")]
     bool TestDeprecated { get; set; }
 
-    [PathExecutable]
+    [PathExecutable("git")]
     readonly Tool Git;
 
     Target Init => _ => _
         .Before(Generate)
         .Executes(() =>
         {
-            Git("pull --recurse-submodules", workingDirectory: RootDirectory / "mavlink");
+            Git("submodule update --init --recursive", workingDirectory: RootDirectory);
         });
 
     Target Clean => _ => _

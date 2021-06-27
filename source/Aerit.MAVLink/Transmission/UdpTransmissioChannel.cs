@@ -58,6 +58,8 @@ namespace Aerit.MAVLink
 				throw new ObjectDisposedException(GetType().FullName);
 			}
 
+			//SocketErrorCode.ConnectionRefused
+
 			var result = await socket.ReceiveFromAsync(
 			   new(buffer),
 			   SocketFlags.None,
@@ -76,6 +78,11 @@ namespace Aerit.MAVLink
 			if (disposed == 1)
 			{
 				return Task.FromException(new ObjectDisposedException(GetType().FullName));
+			}
+
+			if (active == 0)
+			{
+				return Task.CompletedTask;
 			}
 
 			return endPoint is null

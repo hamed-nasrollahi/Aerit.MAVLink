@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Moq;
 
+using Aerit.MAVLink.Protocols.Command;
+
 namespace Aerit.MAVLink.Tests
 {
     public class CommandTests

@@ -10,7 +10,10 @@ namespace Aerit.MAVLink
 	using Utils;
 	using V2;
 
-	public sealed partial class Client : ICommandClient, IDisposable
+	using Protocols.Connection;
+	using Protocols.Command;
+
+	public sealed partial class Client : IHeartbeatClient, ICommandClient, IDisposable
 	{
 		private readonly ITransmissionChannel transmissionChannel;
 		private readonly byte systemId;

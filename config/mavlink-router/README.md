@@ -8,4 +8,4 @@ Route mavlink packets between endpoints.
 
 ## Run
 
-	$ docker run -p 3000:3000/udp -v etc:/mavlink-router/etc --name mavlink-router mavlink-router:latest
+	$ docker run --name mavlink-router -p 3000:3000/udp -v /home/pablo/source/Aerit.MAVLink/config/mavlink-router/etc:/mavlink-router/etc mavlink-router:latest

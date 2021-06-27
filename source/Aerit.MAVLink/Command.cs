@@ -8,16 +8,9 @@ using System.Threading.Tasks;
 
 namespace Aerit.MAVLink
 {
-    public interface ICommandClient
-    {
-        Task SendAsync(CommandLong message);
+	using Protocols.Command;
 
-        Task SendAsync(CommandCancel message);
-
-        Task SendAsync(CommandAck message);
-    }
-
-    public sealed class CommandHandler : IDisposable
+	public sealed class CommandHandler : IDisposable
     {
         private readonly SemaphoreSlim semaphore = new(0, 1);
         private readonly Channel<CommandAck> channel = Channel.CreateUnbounded<CommandAck>();
