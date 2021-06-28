@@ -5,6 +5,8 @@ using System.Buffers;
 using System.IO;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Moq;
 
@@ -42,7 +44,7 @@ namespace Aerit.MAVLink.Store.Tests
 
 				// Act
 
-				using (var writer = new Store.Writer(path))
+				using (var writer = new Store.Writer(NullLogger<Store.Writer>.Instance, path))
 				{
 					writer.Register(indexer.Object);
 

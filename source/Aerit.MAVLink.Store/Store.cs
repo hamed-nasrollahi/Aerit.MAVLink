@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 namespace Aerit.MAVLink.Store
 {
 	public static class Store
@@ -13,10 +15,13 @@ namespace Aerit.MAVLink.Store
 		{
 			private readonly List<IIndexer> indexers = new();
 
-			public Writer(string path)
+			private readonly ILogger<Writer> logger;
+
+			public Writer(ILogger<Writer> logger, string path)
 			{
 				Log = new Log(path);
 				IndexStore = new IndexStore(path, recover: false);
+				this.logger = logger;
 			}
 
 			public Log Log { get; }
@@ -40,6 +45,8 @@ namespace Aerit.MAVLink.Store
 				var address = await Log.WriteAsync(entry.Memory.Slice(0, length), token).ConfigureAwait(false);
 				if (address is null)
 				{
+					logger.LogError("Unable to write entry");
+
 					return false;
 				}
 
@@ -57,7 +64,7 @@ namespace Aerit.MAVLink.Store
 					{
 						if (!await session.AddAsync(key.memory.Memory.Slice(0, key.length), address.Value, token))
 						{
-							//TODO
+							logger.LogWarning("Unable to add entry key");
 						}
 					}
 					finally
