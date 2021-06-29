@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aerit.MAVLink
@@ -10,7 +11,7 @@ namespace Aerit.MAVLink
 
 	public interface IBufferMiddleware : IMiddleware
 	{
-		Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer);
+		Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
 	}
 
 	public interface IBufferMiddlewareOutput
@@ -26,7 +27,7 @@ namespace Aerit.MAVLink
 
 		public IBufferMiddleware? Next { get; set; }
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer)
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
 		{
 			//TODO: metric incoming
 
@@ -94,7 +95,7 @@ namespace Aerit.MAVLink
 
 			//TODO: metric outgoing
 
-			return Next.ProcessAsync(buffer);
+			return Next.ProcessAsync(buffer, token);
 		}
 	}
 }

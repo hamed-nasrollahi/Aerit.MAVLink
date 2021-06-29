@@ -1,5 +1,12 @@
-☐ Pipeline metrics
+Pipeline:
+	☐ Pipeline metrics
+
+Command:
+	✔ TargetCommandHandler @done(21-06-29 13:52)
 
 Command Generator:
 	☐ Range Id filtering
 	☐ Validator
+
+Archive:
+  ✔ Pipeline CancelationToken @done(21-06-29 01:04) @project(Pipeline)

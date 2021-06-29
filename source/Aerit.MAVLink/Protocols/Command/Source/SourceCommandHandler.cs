@@ -1,16 +1,13 @@
 #nullable enable
 
 using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace Aerit.MAVLink
+namespace Aerit.MAVLink.Protocols.Command
 {
-	using Protocols.Command;
-
-	public sealed class CommandHandler : IDisposable
+	public sealed class SourceCommandHandler : IDisposable
     {
         private readonly SemaphoreSlim semaphore = new(0, 1);
         private readonly Channel<CommandAck> channel = Channel.CreateUnbounded<CommandAck>();
@@ -20,7 +17,7 @@ namespace Aerit.MAVLink
 		private readonly byte retry;
 		private readonly int inProgressTimeout;
 
-		public CommandHandler(ICommandClient client, int sequenceTimeout, byte retry, int inProgressTimeout)
+		public SourceCommandHandler(ICommandClient client, int sequenceTimeout, byte retry, int inProgressTimeout)
         {
             this.client = client;
 			this.sequenceTimeout = sequenceTimeout;
@@ -39,19 +36,19 @@ namespace Aerit.MAVLink
             acquired = 0;
         }
 
-        public async ValueTask<bool> EnqueueAsync(CommandAck ack)
+        public async ValueTask<bool> EnqueueAsync(CommandAck ack, CancellationToken token)
         {
             if (!enabled)
             {
                 return false;
             }
 
-            await channel.Writer.WriteAsync(ack).ConfigureAwait(false);
+            await channel.Writer.WriteAsync(ack, token).ConfigureAwait(false);
 
             return true;
         }
 
-        private async Task<CommandAck?> RunSequenceAsync(CommandContext context, CancellationToken token)
+        private async Task<CommandAck?> RunSequenceAsync(SourceCommandContext context, CancellationToken token)
         {
             byte confirmation = 0;
 
@@ -125,18 +122,22 @@ namespace Aerit.MAVLink
             } while (true);
         }
 
-        public async Task RunAsync(CommandContext context, CancellationToken token)
+        public async Task RunAsync(SourceCommandContext context, CancellationToken token)
         {
             try
             {
-                enabled = true;
-
                 token.Register(async () => await client.SendAsync(new CommandCancel()
                 {
                     Command = context.CommandLong.Command,
                     TargetSystem = context.CommandLong.TargetSystem,
                     TargetComponent = context.CommandLong.TargetComponent
                 }).ConfigureAwait(false));
+
+                while (channel.Reader.TryRead(out _))
+                {
+                }
+
+                enabled = true;
 
                 await client.SendAsync(context.CommandLong).ConfigureAwait(false);
 
@@ -179,99 +180,6 @@ namespace Aerit.MAVLink
         public void Dispose()
         {
             semaphore.Dispose();
-        }
-    }
-
-    public sealed class CommandContext : IAsyncDisposable
-    {
-        private readonly CancellationTokenSource cancellation = new();
-
-        private readonly CommandHandler handler;
-
-		private readonly Task background;
-
-		public CommandContext(CommandHandler handler, CommandLong commandLong)
-        {
-            this.handler = handler;
-
-            CommandLong = commandLong;
-
-            background = handler.RunAsync(this, cancellation.Token);
-        }
-
-        public CommandLong CommandLong { get; }
-
-        public MavResult? Result { get; set; }
-
-        public Task WaitAsync(CancellationToken token = default)
-            => handler.WaitAsync(token);
-
-        private int cancelled = 0;
-
-        public void Cancel()
-        {
-            if (Result is not null && Result != MavResult.InProgress)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref cancelled, 1, 0) == 1)
-            {
-                return;
-            }
-
-            cancellation.Cancel();
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await background;
-
-            cancellation.Dispose();
-
-			handler.Release();
-		}
-    }
-
-    public sealed class CommandHandlerRegistry
-    {
-		private const int sequenceTimeout = 1000;
-		private const byte retry = 10;
-		private const int inProgressTimeout = 5000;
-
-        private readonly ConcurrentDictionary<(byte systemId, byte componentId, MavCmd command), CommandHandler> handlers = new();
-
-        private readonly ICommandClient client;
-
-        public CommandHandlerRegistry(ICommandClient client)
-        {
-            this.client = client;
-        }
-
-        public bool TryGet(byte systemId, byte componentId, MavCmd command, out CommandHandler? handler)
-            => handlers.TryGetValue((systemId, componentId, command), out handler);
-
-        public CommandHandler GetOrAdd(byte systemId, byte componentId, MavCmd command)
-            => handlers.GetOrAdd((systemId, componentId, command), key => new(client, sequenceTimeout, retry, inProgressTimeout));
-    }
-
-    public sealed class CommandAckEnpoint : IMessageMiddleware<CommandAck>
-    {
-        private readonly CommandHandlerRegistry handlers;
-
-        public CommandAckEnpoint(CommandHandlerRegistry handlers)
-        {
-            this.handlers = handlers;
-        }
-
-        public async Task<bool> ProcessAsync(byte systemId, byte componentId, CommandAck message)
-        {
-            if (!handlers.TryGet(systemId, componentId, message.Command, out var handler))
-            {
-                return false;
-            }
-
-            return await handler!.EnqueueAsync(message);
         }
     }
 }

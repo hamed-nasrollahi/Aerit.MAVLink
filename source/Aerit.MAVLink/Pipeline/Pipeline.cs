@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
@@ -125,6 +127,26 @@ namespace Aerit.MAVLink
             var last = builder(node.builder.ILoggerFactory.CreateLogger<TNode>());
 
             node.last.Next = last;
+
+            return (node.builder, last);
+        }
+
+        public static (PipelineBuilder<T> builder, MessageEndpoint<TMessage> last) Enpoint<T, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<byte, byte, TMessage, bool> process)
+            where T : IMiddleware
+        {
+			var last = new MessageEndpoint<TMessage>(process);
+
+			node.last.Next = last;
+
+            return (node.builder, last);
+        }
+
+        public static (PipelineBuilder<T> builder, MessageAsyncEndpoint<TMessage> last) Enpoint<T, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<byte, byte, TMessage, CancellationToken, Task<bool>> process)
+            where T : IMiddleware
+        {
+			var last = new MessageAsyncEndpoint<TMessage>(process);
+
+			node.last.Next = last;
 
             return (node.builder, last);
         }

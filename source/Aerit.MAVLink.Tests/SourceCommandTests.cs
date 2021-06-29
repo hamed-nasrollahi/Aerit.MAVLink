@@ -7,7 +7,7 @@ using Aerit.MAVLink.Protocols.Command;
 
 namespace Aerit.MAVLink.Tests
 {
-    public class CommandTests
+    public class SourceCommandTests
     {
         [Fact]
         public async Task MaxRetry()
@@ -15,12 +15,12 @@ namespace Aerit.MAVLink.Tests
             // Arrange
             var client = new Mock<ICommandClient>();
 
-            using var handler = new CommandHandler(client.Object, 1000, 3, 5000);
+            using var handler = new SourceCommandHandler(client.Object, 1000, 3, 5000);
 
             var command = new CommandLong { Command = MavCmd.DoWinch };
 
 			// Act
-			await using var sut = new CommandContext(handler, command);
+			await using var sut = new SourceCommandContext(handler, command);
 
 			await sut.WaitAsync();
 
@@ -40,7 +40,7 @@ namespace Aerit.MAVLink.Tests
             // Arrange
             var client = new Mock<ICommandClient>();
 
-            using var handler = new CommandHandler(client.Object, 1000, 10, 5000);
+            using var handler = new SourceCommandHandler(client.Object, 1000, 10, 5000);
 
             client
                 .Setup(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 1)))
@@ -48,13 +48,13 @@ namespace Aerit.MAVLink.Tests
                 {
                     Command = o.Command,
                     Result = MavResult.Accepted
-                }));
+                }, default));
 
             var command = new CommandLong { Command = MavCmd.DoWinch };
 
             // Act
 
-            var sut = new CommandContext(handler, command);
+            var sut = new SourceCommandContext(handler, command);
 
             await sut.WaitAsync();
 
@@ -72,7 +72,7 @@ namespace Aerit.MAVLink.Tests
             // Arrange
             var client = new Mock<ICommandClient>();
 
-            using var handler = new CommandHandler(client.Object, 1000, 10, 5000);
+            using var handler = new SourceCommandHandler(client.Object, 1000, 10, 5000);
 
             client
                 .Setup(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 0)))
@@ -82,7 +82,7 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.InProgress
-                    });
+                    }, default);
 
                     await Task.Delay(200);
 
@@ -90,7 +90,7 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.InProgress
-                    });
+                    }, default);
 
                     await Task.Delay(200);
 
@@ -98,13 +98,13 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.Accepted
-                    });
+                    }, default);
                 });
 
             var command = new CommandLong { Command = MavCmd.DoWinch };
 
 			// Act
-			await using var sut = new CommandContext(handler, command);
+			await using var sut = new SourceCommandContext(handler, command);
 
 			await sut.WaitAsync();
 
@@ -121,7 +121,7 @@ namespace Aerit.MAVLink.Tests
             // Arrange
             var client = new Mock<ICommandClient>();
 
-            using var handler = new CommandHandler(client.Object, 1000, 10, 1000);
+            using var handler = new SourceCommandHandler(client.Object, 1000, 10, 1000);
 
             client
                 .Setup(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 0)))
@@ -131,7 +131,7 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.InProgress
-                    });
+                    }, default);
 
                     await Task.Delay(2000);
 
@@ -139,13 +139,13 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.Accepted
-                    });
+                    }, default);
                 });
 
             var command = new CommandLong { Command = MavCmd.DoWinch };
 
 			// Act
-			await using var sut = new CommandContext(handler, command);
+			await using var sut = new SourceCommandContext(handler, command);
 
 			await sut.WaitAsync();
 
@@ -162,7 +162,7 @@ namespace Aerit.MAVLink.Tests
             // Arrange
             var client = new Mock<ICommandClient>();
 
-            using var handler = new CommandHandler(client.Object, 1000, 10, 5000);
+            using var handler = new SourceCommandHandler(client.Object, 1000, 10, 5000);
 
             client
                 .Setup(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 0)))
@@ -172,7 +172,7 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.InProgress
-                    });
+                    }, default);
                 });
 
             client
@@ -183,13 +183,13 @@ namespace Aerit.MAVLink.Tests
                     {
                         Command = o.Command,
                         Result = MavResult.Cancelled
-                    });
+                    }, default);
                 });
 
             var command = new CommandLong { Command = MavCmd.DoWinch };
             
             // Act
-            await using var sut = new CommandContext(handler, command);
+            await using var sut = new SourceCommandContext(handler, command);
 
             await Task.Delay(200);
 

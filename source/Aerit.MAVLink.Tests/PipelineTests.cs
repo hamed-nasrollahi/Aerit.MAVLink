@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -32,8 +33,8 @@ namespace Aerit.MAVLink.Tests
             var endpoint = new Mock<IMessageMiddleware<Heartbeat>>();
 
             endpoint
-                .Setup(o => o.ProcessAsync(It.IsAny<byte>(), It.IsAny<byte>(), It.IsAny<Heartbeat>()).Result)
-                .Callback<byte, byte, Heartbeat>((systemId, componentId, message) => messageOut = message)
+                .Setup(o => o.ProcessAsync(It.IsAny<byte>(), It.IsAny<byte>(), It.IsAny<Heartbeat>(), It.IsAny<CancellationToken>()).Result)
+                .Callback<byte, byte, Heartbeat, CancellationToken>((systemId, componentId, message, token) => messageOut = message)
                 .Returns(true);
 
             var pipeline = PipelineBuilder
@@ -52,7 +53,7 @@ namespace Aerit.MAVLink.Tests
 
             transmissionChannel
                 .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
-                .Callback<byte[], int>((buffer, length) => pipeline.ProcessAsync(buffer.AsMemory(0, length)));
+                .Callback<byte[], int>((buffer, length) => pipeline.ProcessAsync(buffer.AsMemory(0, length), default));
 
             using var client = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
 
@@ -60,7 +61,7 @@ namespace Aerit.MAVLink.Tests
             await client.SendAsync(messageIn);
 
             // Assert
-            endpoint.Verify(o => o.ProcessAsync(It.IsAny<byte>(), It.IsAny<byte>(), It.IsAny<Heartbeat>()), Times.Once);
+            endpoint.Verify(o => o.ProcessAsync(It.IsAny<byte>(), It.IsAny<byte>(), It.IsAny<Heartbeat>(), It.IsAny<CancellationToken>()), Times.Once);
 
             Assert.NotNull(messageOut);
 

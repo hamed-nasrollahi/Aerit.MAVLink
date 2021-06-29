@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -10,9 +11,9 @@ namespace Aerit.MAVLink
 {
 	public interface IPacketMiddleware : IMiddleware
 	{
-		Task<bool> ProcessAsync(V1.Packet packet);
+		Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token);
 
-		Task<bool> ProcessAsync(V2.Packet packet);
+		Task<bool> ProcessAsync(V2.Packet packet, CancellationToken token);
 	}
 
 	public interface IPacketMiddlewareOutput
@@ -31,7 +32,7 @@ namespace Aerit.MAVLink
 
 		public IPacketMiddleware? Next { get; set; }
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer)
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
 		{
 			if (Next is null)
 			{
@@ -54,7 +55,7 @@ namespace Aerit.MAVLink
 
 						//TODO: metric v1 outgoing
 
-						return Next.ProcessAsync(packet);
+						return Next.ProcessAsync(packet, token);
 					}
 
 				case Magic.V2:
@@ -71,7 +72,7 @@ namespace Aerit.MAVLink
 
 						//TODO: metric v2 outgoing
 
-						return Next.ProcessAsync(packet);
+						return Next.ProcessAsync(packet, token);
 					}
 
 				default:
@@ -93,7 +94,7 @@ namespace Aerit.MAVLink
 
 		public IPacketMiddleware? Next { get; set; }
 
-		public Task<bool> ProcessAsync(V1.Packet packet)
+		public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)
 		{
 			if (Next is null)
 			{
@@ -111,10 +112,10 @@ namespace Aerit.MAVLink
 
 			//TODO: metric v1 outgoing
 
-			return Next.ProcessAsync(packet);
+			return Next.ProcessAsync(packet, token);
 		}
 
-		public Task<bool> ProcessAsync(V2.Packet packet)
+		public Task<bool> ProcessAsync(V2.Packet packet, CancellationToken token)
 		{
 			if (Next is null)
 			{
@@ -132,7 +133,7 @@ namespace Aerit.MAVLink
 
 			//TODO: metric v2 outgoing
 
-			return Next.ProcessAsync(packet);
+			return Next.ProcessAsync(packet, token);
 		}
 	}
 
@@ -154,34 +155,38 @@ namespace Aerit.MAVLink
 			this.loggerFactory = loggerFactory;
 		}
 
-		public Task<bool> ProcessAsync(V1.Packet packet)
+		public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)
 		{
 			//TODO: metric v1 incoming
 
 			foreach (var branch in branches)
 			{
+				token.ThrowIfCancellationRequested();
+
 				if (branch.Eval(packet))
 				{
 					//TODO: metric v1 outgoing
 
-					return branch.ProcessAsync(packet);
+					return branch.ProcessAsync(packet, token);
 				}
 			}
 
 			return Task.FromResult(false);
 		}
 
-		public Task<bool> ProcessAsync(V2.Packet packet)
+		public Task<bool> ProcessAsync(V2.Packet packet, CancellationToken token)
 		{
 			//TODO: metric v2 incoming
 
 			foreach (var branch in branches)
 			{
+				token.ThrowIfCancellationRequested();
+
 				if (branch.Eval(packet))
 				{
 					//TODO: metric v2 outgoing
 
-					return branch.ProcessAsync(packet);
+					return branch.ProcessAsync(packet, token);
 				}
 			}
 

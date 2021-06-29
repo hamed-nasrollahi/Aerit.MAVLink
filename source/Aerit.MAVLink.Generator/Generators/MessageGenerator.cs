@@ -25,6 +25,7 @@ namespace Aerit.MAVLink.Generator
 				builder.AppendLine("using System.Buffers.Binary;");
 			}
 
+			builder.AppendLine("using System.Threading;");
 			builder.AppendLine("using System.Threading.Tasks;");
 
 			builder.AppendLine();
@@ -692,7 +693,8 @@ namespace Aerit.MAVLink.Generator
 							{
 								if (index > 0)
 								{
-									builder.AppendLine($"            if ((span.Length - {index}) < 8)");
+									builder.AppendLine($"            if (span.Length < {index}) {{}}");
+									builder.AppendLine($"            else if ((span.Length - {index}) < 8)");
 								}
 								else
 								{
@@ -713,11 +715,12 @@ namespace Aerit.MAVLink.Generator
 						}
 						else
 						{
-							builder.AppendLine($"            double {fieldLowerName};");
+							builder.AppendLine($"            double {fieldLowerName} = 0.0;");
 
 							if (index > 0)
 							{
-								builder.AppendLine($"            if ((span.Length - {index}) < 8)");
+								builder.AppendLine($"            if (span.Length < {index}) {{}}");
+								builder.AppendLine($"            else if ((span.Length - {index}) < 8)");
 							}
 							else
 							{
@@ -855,7 +858,8 @@ namespace Aerit.MAVLink.Generator
 							{
 								if (index > 0)
 								{
-									builder.AppendLine($"            if ((span.Length - {index}) < 4)");
+									builder.AppendLine($"            if (span.Length < {index}) {{}}");
+									builder.AppendLine($"            else if ((span.Length - {index}) < 4)");
 								}
 								else
 								{
@@ -876,11 +880,12 @@ namespace Aerit.MAVLink.Generator
 						}
 						else
 						{
-							builder.AppendLine($"            float {fieldLowerName};");
+							builder.AppendLine($"            float {fieldLowerName} = 0.0f;");
 
 							if (index > 0)
 							{
-								builder.AppendLine($"            if ((span.Length - {index}) < 4)");
+								builder.AppendLine($"            if (span.Length < {index}) {{}}");
+								builder.AppendLine($"            else if ((span.Length - {index}) < 4)");
 							}
 							else
 							{
@@ -1257,24 +1262,24 @@ namespace Aerit.MAVLink.Generator
 			builder.AppendLine("        public bool Eval(V2.Packet packet)");
 			builder.AppendLine($"            => packet.MessageId == {name}.MAVLinkMessageId;");
 			builder.AppendLine();
-			builder.AppendLine("        public Task<bool> ProcessAsync(V1.Packet packet)");
+			builder.AppendLine("        public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)");
 			builder.AppendLine("        {");
 			builder.AppendLine("            if (Next is null)");
 			builder.AppendLine("            {");
 			builder.AppendLine("                return Task.FromResult(false);");
 			builder.AppendLine("            }");
 			builder.AppendLine();
-			builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span));");
+			builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span), token);");
 			builder.AppendLine("        }");
 			builder.AppendLine();
-			builder.AppendLine("        public Task<bool> ProcessAsync(V2.Packet packet)");
+			builder.AppendLine("        public Task<bool> ProcessAsync(V2.Packet packet, CancellationToken token)");
 			builder.AppendLine("        {");
 			builder.AppendLine("            if (Next is null)");
 			builder.AppendLine("            {");
 			builder.AppendLine("                return Task.FromResult(false);");
 			builder.AppendLine("            }");
 			builder.AppendLine();
-			builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span));");
+			builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span), token);");
 			builder.AppendLine("        }");
 			builder.AppendLine("    }");
 

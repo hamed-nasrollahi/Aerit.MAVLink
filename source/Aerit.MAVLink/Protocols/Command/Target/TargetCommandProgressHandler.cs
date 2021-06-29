@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Aerit.MAVLink.Protocols.Command
 {
-	public sealed class ProgressHelper : IDisposable
+	public sealed class TargetCommandProgressHandler : IDisposable
 	{
 		private readonly CancellationTokenSource cancellation = new();
 		private readonly Channel<byte> channel = Channel.CreateUnbounded<byte>();
@@ -15,7 +15,7 @@ namespace Aerit.MAVLink.Protocols.Command
 
 		private readonly Task background;
 
-		public ProgressHelper(ICommandClient client, int period)
+		public TargetCommandProgressHandler(ICommandClient client, int period)
 		{
 			this.client = client;
 			this.period = period;

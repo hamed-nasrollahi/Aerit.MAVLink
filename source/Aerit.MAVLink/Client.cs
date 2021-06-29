@@ -22,7 +22,7 @@ namespace Aerit.MAVLink
 		private readonly byte systemId;
 		private readonly byte componentId;
 
-		private readonly CommandHandlerRegistry commandHandlers;
+		private readonly SourceCommandHandlerRegistry commandHandlers;
 
 		public Client(ILogger<Client> logger, ITransmissionChannel transmissionChannel, byte systemId, byte componentId)
 		{
@@ -147,17 +147,18 @@ namespace Aerit.MAVLink
 			}
 		}
 
-		public CommandContext? Submit(CommandLong command)
+		public SourceCommandContext? Submit(CommandLong command)
 		{
-			var handler = commandHandlers.GetOrAdd(command.TargetSystem, command.TargetComponent, command.Command);
-
-			if (!handler.TryAcquire())
+			if (commandHandlers.TryAcquire(command.TargetSystem, command.TargetComponent, command.Command, out var handler))
 			{
-				return null;
+				return new SourceCommandContext(handler!, command);
 			}
 
-			return new CommandContext(handler, command);
+			return null;
 		}
+
+		public CommandAckEnpoint CommandAckEnpoint()
+			=> new(commandHandlers);
 
 		public async Task ListenAsync(IBufferMiddleware pipeline, CancellationToken token = default)
 		{
@@ -181,7 +182,7 @@ namespace Aerit.MAVLink
 
 						//TODO: metric incoming
 
-						if (await pipeline.ProcessAsync(buffer.AsMemory(0, receive.Result)))
+						if (await pipeline.ProcessAsync(buffer.AsMemory(0, receive.Result), token))
 						{
 							//TODO: metric processed
 						}
