@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
+using Prometheus;
+
 namespace Aerit.MAVLink
 {
 	public interface IPacketMiddleware : IMiddleware
@@ -32,6 +34,12 @@ namespace Aerit.MAVLink
 
 		public IPacketMiddleware? Next { get; set; }
 
+		private static readonly Counter IncomingPacketsCount = Metrics
+			.CreateCounter("mavlink_packets_incoming_total", "Number of incoming mavlink packets.", new CounterConfiguration()
+			{
+				LabelNames = new[] { "version" }
+			});
+
 		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
 		{
 			if (Next is null)
@@ -43,8 +51,6 @@ namespace Aerit.MAVLink
 			{
 				case Magic.V1:
 					{
-						//TODO: metric v1 incoming
-
 						var packet = V1.Packet.Deserialize(buffer);
 						if (packet is null)
 						{
@@ -53,31 +59,29 @@ namespace Aerit.MAVLink
 							return Task.FromResult(false);
 						}
 
-						//TODO: metric v1 outgoing
+						IncomingPacketsCount.WithLabels("v1").Inc();
 
 						return Next.ProcessAsync(packet, token);
 					}
 
 				case Magic.V2:
 					{
-						//TODO: metric v2 incoming
-
 						var packet = V2.Packet.Deserialize(buffer);
 						if (packet is null)
 						{
 							logger.LogWarning("Unable to deserialize V2 packet");
-							//TODO: metric
+
 							return Task.FromResult(false);
 						}
 
-						//TODO: metric v2 outgoing
+						IncomingPacketsCount.WithLabels("v2").Inc();
 
 						return Next.ProcessAsync(packet, token);
 					}
 
 				default:
 					logger.LogWarning("Unknown packet received");
-					//TODO: metric unknown
+
 					return Task.FromResult(false);
 			}
 		}
@@ -94,6 +98,12 @@ namespace Aerit.MAVLink
 
 		public IPacketMiddleware? Next { get; set; }
 
+		private static readonly Counter InvalidPacketsCount = Metrics
+			.CreateCounter("mavlink_packets_invalid_total", "Number of invalid mavlink packets.", new CounterConfiguration()
+			{
+				LabelNames = new[] { "version" }
+			});
+
 		public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)
 		{
 			if (Next is null)
@@ -101,16 +111,14 @@ namespace Aerit.MAVLink
 				return Task.FromResult(false);
 			}
 
-			//TODO: metric v1 incoming
-
 			if (!packet.Validate())
 			{
+				InvalidPacketsCount.WithLabels("v1").Inc();
+
 				logger.LogWarning("Unable to validate {packet}", packet);
 
 				return Task.FromResult(false);
 			}
-
-			//TODO: metric v1 outgoing
 
 			return Next.ProcessAsync(packet, token);
 		}
@@ -122,16 +130,14 @@ namespace Aerit.MAVLink
 				return Task.FromResult(false);
 			}
 
-			//TODO: metric v2 incoming
-
 			if (!packet.Validate())
 			{
+				InvalidPacketsCount.WithLabels("v2").Inc();
+
 				logger.LogWarning("Unable to validate {packet}", packet);
 
 				return Task.FromResult(false);
 			}
-
-			//TODO: metric v2 outgoing
 
 			return Next.ProcessAsync(packet, token);
 		}
@@ -157,16 +163,12 @@ namespace Aerit.MAVLink
 
 		public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)
 		{
-			//TODO: metric v1 incoming
-
 			foreach (var branch in branches)
 			{
 				token.ThrowIfCancellationRequested();
 
 				if (branch.Eval(packet))
 				{
-					//TODO: metric v1 outgoing
-
 					return branch.ProcessAsync(packet, token);
 				}
 			}
@@ -176,16 +178,12 @@ namespace Aerit.MAVLink
 
 		public Task<bool> ProcessAsync(V2.Packet packet, CancellationToken token)
 		{
-			//TODO: metric v2 incoming
-
 			foreach (var branch in branches)
 			{
 				token.ThrowIfCancellationRequested();
 
 				if (branch.Eval(packet))
 				{
-					//TODO: metric v2 outgoing
-
 					return branch.ProcessAsync(packet, token);
 				}
 			}

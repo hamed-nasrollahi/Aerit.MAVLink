@@ -33,7 +33,6 @@ var pipeline = PipelineBuilder
 	)
 	.Build();
 
-
 var commandContext = client.Submit(10, 1, new DoDelivery()
 {
 	DeliveryMode = 2
@@ -50,3 +49,7 @@ logger.LogInformation("Result: {result}", commandContext.Result);
 cancellation.Cancel();
 
 await listen;
+
+var metrics = await MetricsUtils.ExportAsync();
+
+logger.LogInformation(metrics);

@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
+using Prometheus;
+
 namespace Aerit.MAVLink
 {
 	using Utils;
@@ -160,6 +162,12 @@ namespace Aerit.MAVLink
 		public CommandAckEnpoint CommandAckEnpoint()
 			=> new(commandHandlers);
 
+		private static readonly Counter IncomingBuffersCount = Metrics
+			.CreateCounter("mavlink_buffers_incoming_total", "Number of incoming mavlink buffers.");
+
+		private static readonly Counter ProcessedBuffersCount = Metrics
+			.CreateCounter("mavlink_buffers_processed_total", "Number of mavlink buffers processed.");
+
 		public async Task ListenAsync(IBufferMiddleware pipeline, CancellationToken token = default)
 		{
 			try
@@ -180,11 +188,11 @@ namespace Aerit.MAVLink
 							break;
 						}
 
-						//TODO: metric incoming
+						IncomingBuffersCount.Inc();
 
 						if (await pipeline.ProcessAsync(buffer.AsMemory(0, receive.Result), token))
 						{
-							//TODO: metric processed
+							ProcessedBuffersCount.Inc();
 						}
 					}
 					finally

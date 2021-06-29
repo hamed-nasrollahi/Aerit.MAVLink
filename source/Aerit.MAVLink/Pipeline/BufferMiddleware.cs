@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Prometheus;
+
 namespace Aerit.MAVLink
 {
 	using static Target;
@@ -27,10 +29,11 @@ namespace Aerit.MAVLink
 
 		public IBufferMiddleware? Next { get; set; }
 
+		private static readonly Counter MatchedBuffersCount = Metrics
+			.CreateCounter("mavlink_buffers_matched_total", "Number of mavlink buffers matched.");
+
 		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
 		{
-			//TODO: metric incoming
-
 			if (Next is null)
 			{
 				return Task.FromResult(false);
@@ -93,7 +96,7 @@ namespace Aerit.MAVLink
 				return Task.FromResult(false);
 			}
 
-			//TODO: metric outgoing
+			MatchedBuffersCount.Inc();
 
 			return Next.ProcessAsync(buffer, token);
 		}
