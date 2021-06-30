@@ -4,6 +4,7 @@ Route mavlink packets between endpoints.
 
 ## Build
 	
+	$ git clone https://github.com/mavlink-router/mavlink-router.git --recursive
 	$ docker build -t mavlink-router .
 
 ## Run
