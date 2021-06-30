@@ -1,12 +1,14 @@
 Pipeline:
-	☐ Pipeline metrics
+	☐ Pipeline Dependency Injection Extensions
+  	✔ Pipeline CancelationToken @done(21-06-29 01:04)
+	✔ Pipeline metrics @done(21-06-29 15:05)
 
 Command:
 	✔ TargetCommandHandler @done(21-06-29 13:52)
 
-Command Generator:
-	☐ Range Id filtering
-	☐ Validator
+	Generator:
+		✔ Range Id filtering @done(21-06-29 16:26)
+		✔ Validator @done(21-06-30 01:40)
 
-Archive:
-  ✔ Pipeline CancelationToken @done(21-06-29 01:04) @project(Pipeline)
+Store:
+	☐ endpoint for mavlink-router

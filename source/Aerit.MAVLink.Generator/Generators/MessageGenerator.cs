@@ -87,7 +87,7 @@ namespace Aerit.MAVLink.Generator
 						.Split('\n')
 						.Select(o => o.TrimStart()))
 					{
-						builder.AppendLine($"        /// {field.Description}");
+						builder.AppendLine($"        /// {line}");
 					}
 					if (field.Units is not null)
 					{

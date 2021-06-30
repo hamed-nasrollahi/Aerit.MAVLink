@@ -1,3 +1,4 @@
 Generated/*.cs
 Generated/Enums/*.cs
 Generated/Messages/*.cs
+Generated/Commands/*.cs

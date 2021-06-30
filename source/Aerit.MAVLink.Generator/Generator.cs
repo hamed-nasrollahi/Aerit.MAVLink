@@ -10,6 +10,7 @@ namespace Aerit.MAVLink.Generator
 			string Generated,
 			string Enums,
 			string Messages,
+			string Commands,
 			string? Tests = null);
 
 		public record Config(
@@ -67,9 +68,21 @@ namespace Aerit.MAVLink.Generator
 			var mavCmd = enums.FirstOrDefault(o => o.Name == "MAV_CMD");
 			if (mavCmd is not null)
 			{
-				CommandGenerator.Run("", mavCmd, builder);
-				//File.WriteAllText(Path.Combine(config.Destination.Generated, "TargetMatch.cs"), builder.ToString());
-				builder.Clear();
+				foreach (var cmd in mavCmd.Entries)
+				{
+					if (!int.TryParse(cmd.Value, out var value) || value < 60100)
+					{
+						continue;
+					}
+
+					var name = CommandGenerator.Run(config.Namespace, cmd, builder);
+					if (!string.IsNullOrEmpty(name))
+					{
+						File.WriteAllText(Path.Combine(config.Destination.Commands, $"{name}.cs"), builder.ToString());
+					}
+
+					builder.Clear();
+				}
 			}
 		}
 	}

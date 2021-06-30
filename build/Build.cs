@@ -33,6 +33,7 @@ class Build : NukeBuild
     AbsolutePath GeneratedDestination => SourceDirectory / "Aerit.MAVLink" / "Generated";
     AbsolutePath EnumsDestination => GeneratedDestination / "Enums";
     AbsolutePath MessagesDestination => GeneratedDestination / "Messages";
+    AbsolutePath CommandsDestination => GeneratedDestination / "Commands";
 
     AbsolutePath TestsDestination => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
 
@@ -62,6 +63,7 @@ class Build : NukeBuild
 
             EnsureCleanDirectory(EnumsDestination);
             EnsureCleanDirectory(MessagesDestination);
+            EnsureCleanDirectory(CommandsDestination);
             EnsureCleanDirectory(GeneratedDestination);
             EnsureCleanDirectory(TestsDestination);
 
@@ -74,6 +76,7 @@ class Build : NukeBuild
             EnsureExistingDirectory(GeneratedDestination);
             EnsureExistingDirectory(EnumsDestination);
             EnsureExistingDirectory(MessagesDestination);
+            EnsureExistingDirectory(CommandsDestination);
             EnsureExistingDirectory(TestsDestination);
 
             Generator.Run(new(
@@ -83,6 +86,7 @@ class Build : NukeBuild
                     Generated: GeneratedDestination,
                     Enums: EnumsDestination,
                     Messages: MessagesDestination,
+                    Commands: CommandsDestination,
                     Tests: TestsDestination),
                 Namespace: Namespace,
                 TestDeprecated: TestDeprecated));
