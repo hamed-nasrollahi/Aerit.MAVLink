@@ -15,6 +15,10 @@ namespace Aerit.MAVLink.Generator
 			var name = (string?)field.Attribute("name") ?? throw new Exception("Invalid field Name");
 
 			var type = (string?)field.Attribute("type") ?? throw new Exception("Invalid field Type");
+			if (type == "uint8_t_mavlink_version")
+			{
+				type = "uint8_t";
+			}
 			byte? length = null;
 
 			var arrayStart = type.IndexOf('[');

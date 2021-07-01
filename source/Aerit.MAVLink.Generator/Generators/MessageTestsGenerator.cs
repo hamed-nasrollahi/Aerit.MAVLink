@@ -18,7 +18,6 @@ namespace Aerit.MAVLink.Generator
                 "uint16_t" or "int16_t" => $"0x{0x4200 + offset + index:x4}",
                 "uint8_t" => $"0x{(0x42 + offset + index) & 0xff:x2}",
                 "int8_t" => $"0x{1 + index:x2}",
-                "uint8_t_mavlink_version" => "0xfd",
                 _ => throw new Exception("Unexpected Type")
             };
 

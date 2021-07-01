@@ -501,10 +501,6 @@ namespace Aerit.MAVLink.Generator
 
 						break;
 
-					case "uint8_t_mavlink_version":
-						builder.AppendLine($@"            buffer[{index++}] = {fieldName};");
-						break;
-
 					default:
 						break;
 				}
@@ -1119,10 +1115,6 @@ namespace Aerit.MAVLink.Generator
 						builder.AppendLine("            }");
 
 						index += field.Type.Length ?? 0;
-						break;
-
-					case "uint8_t_mavlink_version":
-						builder.AppendLine($"            var {fieldLowerName} = (byte)(span.Length >= {index + 1} ? span[{index}] : 0x00);");
 						break;
 
 					default:

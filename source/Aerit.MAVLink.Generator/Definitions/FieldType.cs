@@ -19,7 +19,6 @@ namespace Aerit.MAVLink.Generator
             "uint8_t" => 1,
             "int8_t" => 1,
             "char" => 1,
-            "uint8_t_mavlink_version" => 1,
             _ => throw new ArgumentException("Invalid type")
         };
 
@@ -36,7 +35,6 @@ namespace Aerit.MAVLink.Generator
             "uint8_t" => "byte",
             "int8_t" => "sbyte",
             "char" => "string",
-            "uint8_t_mavlink_version" => "byte",
             _ => throw new ArgumentException("Invalid type")
         };
     }
