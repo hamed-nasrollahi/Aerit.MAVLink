@@ -11,7 +11,8 @@ namespace Aerit.MAVLink.Generator
 			string Enums,
 			string Messages,
 			string Commands,
-			string? Tests = null);
+			string? MessagesTests = null,
+			string? CommandsTests = null);
 
 		public record Config(
 			(string path, string file) Definitions,
@@ -42,7 +43,7 @@ namespace Aerit.MAVLink.Generator
 
 				builder.Clear();
 
-				if (config.Destination.Tests is not null)
+				if (config.Destination.MessagesTests is not null)
 				{
 					if (!config.TestDeprecated && message.Deprecated is not null)
 					{
@@ -51,7 +52,7 @@ namespace Aerit.MAVLink.Generator
 
 					name = MessageTestsGenerator.Run(config.Namespace, message, builder);
 
-					File.WriteAllText(Path.Combine(config.Destination.Tests, $"{name}Tests.cs"), builder.ToString());
+					File.WriteAllText(Path.Combine(config.Destination.MessagesTests, $"{name}Tests.cs"), builder.ToString());
 
 					builder.Clear();
 				}
@@ -68,20 +69,31 @@ namespace Aerit.MAVLink.Generator
 			var mavCmd = enums.FirstOrDefault(o => o.Name == "MAV_CMD");
 			if (mavCmd is not null)
 			{
-				foreach (var cmd in mavCmd.Entries)
+				foreach (var entry in mavCmd.Entries)
 				{
-					if (!int.TryParse(cmd.Value, out var value) || value < 60100)
+					if (!int.TryParse(entry.Value, out var value) || value < 60100)
 					{
 						continue;
 					}
+
+					var cmd = CommandDefinition.Create(entry);
 
 					var name = CommandGenerator.Run(config.Namespace, cmd, builder);
 					if (!string.IsNullOrEmpty(name))
 					{
 						File.WriteAllText(Path.Combine(config.Destination.Commands, $"{name}.cs"), builder.ToString());
 					}
-
 					builder.Clear();
+
+					if (config.Destination.CommandsTests is not null)
+					{
+						name = CommandTestsGenerator.Run(config.Namespace, cmd, builder);
+						if (!string.IsNullOrEmpty(name))
+						{
+							File.WriteAllText(Path.Combine(config.Destination.CommandsTests, $"{name}Tests.cs"), builder.ToString());
+						}
+						builder.Clear();
+					}
 				}
 			}
 		}

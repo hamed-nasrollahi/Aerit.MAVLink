@@ -36,10 +36,12 @@ class Build : NukeBuild
     AbsolutePath CommandsDestination => GeneratedDestination / "Commands";
 
     AbsolutePath TestsDestination => SourceDirectory / "Aerit.MAVLink.Tests" / "Generated";
+	AbsolutePath MessagesTestsDestination => TestsDestination / "Messages";
+	AbsolutePath CommandsTestsDestination => TestsDestination / "Commands";
 
-    // AbsolutePath OutputDirectory => RootDirectory / "output";
+	// AbsolutePath OutputDirectory => RootDirectory / "output";
 
-    [Parameter("Namespace")]
+	[Parameter("Namespace")]
     string Namespace { get; set; } = "Aerit.MAVLink";
 
     [Parameter("Generate tests for deprecated messages")]
@@ -78,6 +80,8 @@ class Build : NukeBuild
             EnsureExistingDirectory(MessagesDestination);
             EnsureExistingDirectory(CommandsDestination);
             EnsureExistingDirectory(TestsDestination);
+            EnsureExistingDirectory(MessagesTestsDestination);
+            EnsureExistingDirectory(CommandsTestsDestination);
 
             Generator.Run(new(
                 // Definitions: (DefinitionsDirectory, "common.xml"),
@@ -87,7 +91,8 @@ class Build : NukeBuild
                     Enums: EnumsDestination,
                     Messages: MessagesDestination,
                     Commands: CommandsDestination,
-                    Tests: TestsDestination),
+                    MessagesTests: MessagesTestsDestination,
+                    CommandsTests: CommandsTestsDestination),
                 Namespace: Namespace,
                 TestDeprecated: TestDeprecated));
         });
