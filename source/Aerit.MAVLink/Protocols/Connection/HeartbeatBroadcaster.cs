@@ -64,7 +64,8 @@ namespace Aerit.MAVLink.Protocols.Connection
 					Type = type,
 					Autopilot = autopilot,
 					BaseMode = baseMode,
-					SystemStatus = state
+					SystemStatus = state,
+					MavlinkVersion = Version.Minimal
 				});
 			}
 		}

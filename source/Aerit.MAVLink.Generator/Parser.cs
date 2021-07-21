@@ -220,7 +220,7 @@ namespace Aerit.MAVLink.Generator
 			return new(name, type, bitmask, description, entries, deprecated);
 		}
 
-		public static (List<MessageDefinition> messages, List<EnumDefinition> enums) Run(string path, string fn, Dictionary<string, FieldType>? enumBaseTypes = null)
+		public static (List<MessageDefinition> messages, List<EnumDefinition> enums, List<VersionDefinition> versions) Run(string path, string fn, Dictionary<string, FieldType>? enumBaseTypes = null)
 		{
             enumBaseTypes ??= new Dictionary<string, FieldType>();
 
@@ -228,6 +228,7 @@ namespace Aerit.MAVLink.Generator
 
 			var messages = new List<MessageDefinition>();
 			var enums = new List<EnumDefinition>();
+			var versions = new List<VersionDefinition>();
 
 			var include = doc?.Root?.Element("include");
 			if (include is not null)
@@ -244,10 +245,20 @@ namespace Aerit.MAVLink.Generator
 					includePath = Path.GetFullPath(includePath, path);
 				}
 
-				var (includedMessages, includedEnums) = Run(includePath, includeFn, enumBaseTypes);
+				var (includedMessages, includedEnums, includeVersions) = Run(includePath, includeFn, enumBaseTypes);
 
 				messages.AddRange(includedMessages);
 				enums.AddRange(includedEnums);
+				versions.AddRange(includeVersions);
+			}
+
+			var version = doc?.Root?.Element("version");
+			if (version is not null)
+			{
+				if (byte.TryParse(version.Value.ToString(), out var value))
+				{
+					versions.Add(new(fn, value));
+				}
 			}
 
 			var elements = doc?.Root?.Element("messages")?.Elements("message");
@@ -298,7 +309,7 @@ namespace Aerit.MAVLink.Generator
 				}
 			}
 
-			return (messages, enums);
+			return (messages, enums, versions);
 		}
 	}
 }

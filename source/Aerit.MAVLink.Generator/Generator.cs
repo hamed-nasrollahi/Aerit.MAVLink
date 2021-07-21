@@ -22,7 +22,7 @@ namespace Aerit.MAVLink.Generator
 
 		public static void Run(Config config)
 		{
-			var (messages, enums) = Parser.Run(config.Definitions.path, config.Definitions.file);
+			var (messages, enums, versions) = Parser.Run(config.Definitions.path, config.Definitions.file);
 
 			var builder = new StringBuilder();
 
@@ -64,6 +64,10 @@ namespace Aerit.MAVLink.Generator
 
 			TargetMatchGenerator.Run(config.Namespace, messages, builder);
 			File.WriteAllText(Path.Combine(config.Destination.Generated, "TargetMatch.cs"), builder.ToString());
+			builder.Clear();
+
+			VersionGenerator.Run(config.Namespace, versions, builder);
+			File.WriteAllText(Path.Combine(config.Destination.Generated, "Version.cs"), builder.ToString());
 			builder.Clear();
 
 			var mavCmd = enums.FirstOrDefault(o => o.Name == "MAV_CMD");
