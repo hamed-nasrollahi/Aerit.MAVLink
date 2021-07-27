@@ -6,6 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using NodaTime;
 
 using Prometheus;
 
@@ -19,22 +22,36 @@ namespace Aerit.MAVLink
 
 	public sealed partial class Client : IHeartbeatClient, ICommandClient, IDisposable
 	{
+		public class Options
+		{
+			public byte SystemId { get; set; }
+
+			public byte ComponentId { get; set; }
+		}
+
 		private readonly ILogger<Client> logger;
 		private readonly ITransmissionChannel transmissionChannel;
-		private readonly byte systemId;
-		private readonly byte componentId;
 
 		private readonly SourceCommandHandlerRegistry commandHandlers;
 
-		public Client(ILogger<Client> logger, ITransmissionChannel transmissionChannel, byte systemId, byte componentId)
+		private readonly Instant boot = SystemClock.Instance.GetCurrentInstant();
+
+		public Client(ILogger<Client> logger, ITransmissionChannel transmissionChannel, IOptions<Options> options)
 		{
 			this.logger = logger;
 			this.transmissionChannel = transmissionChannel;
-			this.systemId = systemId;
-			this.componentId = componentId;
 
 			commandHandlers = new(this);
+
+			SystemId = options.Value.SystemId;
+			ComponentId = options.Value.ComponentId;
 		}
+
+		public byte SystemId { get; }
+
+		public byte ComponentId { get; }
+
+		public uint TimeBootMs() => (uint)(SystemClock.Instance.GetCurrentInstant() - boot).TotalMilliseconds;
 
 		private byte[] InitializeBuffer(uint messageID)
 		{
@@ -45,8 +62,8 @@ namespace Aerit.MAVLink
 			buffer[2] = 0x00;
 			buffer[3] = 0x00;
 			buffer[4] = 0x00;
-			buffer[5] = systemId;
-			buffer[6] = componentId;
+			buffer[5] = SystemId;
+			buffer[6] = ComponentId;
 
 			buffer[7] = (byte)messageID;
 			buffer[8] = (byte)(messageID >> 8);

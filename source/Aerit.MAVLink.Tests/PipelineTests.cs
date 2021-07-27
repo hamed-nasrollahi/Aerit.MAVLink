@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 using Xunit;
 using Moq;
@@ -44,7 +45,7 @@ namespace Aerit.MAVLink.Tests
                 .Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger))
                 .Map(map => map
                     .Add(branch => branch
-                        .Append(() => new HeartbeatMiddleware())
+                        .Append<HeartbeatMiddleware>()
                         .Append(() => endpoint.Object))
                 )
                 .Build();
@@ -55,7 +56,14 @@ namespace Aerit.MAVLink.Tests
                 .Setup(o => o.SendAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
                 .Callback<byte[], int>((buffer, length) => pipeline.ProcessAsync(buffer.AsMemory(0, length), default));
 
-            using var client = new Client(NullLogger<Client>.Instance, transmissionChannel.Object, 1, 42);
+            using var client = new Client(
+                NullLogger<Client>.Instance,
+                transmissionChannel.Object,
+                Options.Create(new Client.Options
+				{
+					SystemId = 1,
+					ComponentId = 42
+				}));
 
             // Act
             await client.SendAsync(messageIn);

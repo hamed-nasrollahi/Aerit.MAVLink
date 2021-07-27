@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Aerit.MAVLink.Store
 {
@@ -13,14 +14,22 @@ namespace Aerit.MAVLink.Store
 	{
 		public sealed class Writer : IDisposable
 		{
+			public class Options
+			{
+				public string? Path { get; set; }
+			}
+
 			private readonly List<IIndexer> indexers = new();
 
 			private readonly ILogger<Writer> logger;
 
-			public Writer(ILogger<Writer> logger, string path)
+			public Writer(ILogger<Writer> logger, IOptions<Options> options)
 			{
+				var path = options.Value.Path ?? "./";
+
 				Log = new Log(path);
 				IndexStore = new IndexStore(path, recover: false);
+
 				this.logger = logger;
 			}
 
@@ -85,8 +94,15 @@ namespace Aerit.MAVLink.Store
 
 		public sealed class Reader : IDisposable
 		{
-			public Reader(string path)
+			public class Options
 			{
+				public string? Path { get; set; }
+			}
+
+			public Reader(IOptions<Options> options)
+			{
+				var path = options.Value.Path ?? "./";
+
 				Log = new Log(path);
 				IndexStore = new IndexStore(path, recover: true);
 			}

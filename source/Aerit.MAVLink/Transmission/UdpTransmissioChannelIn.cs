@@ -6,25 +6,26 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Options;
+
 namespace Aerit.MAVLink
 {
-	public sealed class UdpTransmissionChannel : ITransmissionChannel
+	using static UdpTransmissionChannelUtils;
+
+	public sealed class UdpTransmissionChannelIn : ITransmissionChannelIn
 	{
-		static readonly IPEndPoint IPv4Any = new(IPAddress.Any, IPEndPoint.MinPort);
-		static readonly IPEndPoint IPv6Any = new(IPAddress.IPv6Any, IPEndPoint.MinPort);
+		public class Options
+		{
+			public string? Uri { get; set; }
+		}
 
 		private readonly AddressFamily family;
 		private readonly Socket socket;
 
-		public UdpTransmissionChannel(AddressFamily family = AddressFamily.InterNetwork)
+		public UdpTransmissionChannelIn(IOptions<Options> options)
 		{
-			this.family = family;
+			var localEP = IPEndPoint.Parse(options.Value.Uri ?? throw new ArgumentNullException("Options.Uri"));
 
-			socket = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
-		}
-
-		public UdpTransmissionChannel(IPEndPoint localEP)
-		{
 			family = localEP.AddressFamily;
 
 			socket = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
@@ -34,21 +35,6 @@ namespace Aerit.MAVLink
 		private int active = 0;
 		private int disposed = 0;
 
-		public ValueTask ConnectAsync(IPEndPoint endPoint, CancellationToken token = default)
-		{
-			if (disposed == 1)
-			{
-				return ValueTask.FromException(new ObjectDisposedException(GetType().FullName));
-			}
-
-			if (Interlocked.CompareExchange(ref active, 1, 0) == 1)
-			{
-				return ValueTask.CompletedTask;
-			}
-
-			return socket.ConnectAsync(endPoint, token);
-		}
-
 		private IPEndPoint? endPoint = null;
 
 		public async Task<int> ReceiveAsync(byte[] buffer)
@@ -57,8 +43,6 @@ namespace Aerit.MAVLink
 			{
 				throw new ObjectDisposedException(GetType().FullName);
 			}
-
-			//SocketErrorCode.ConnectionRefused
 
 			var result = await socket.ReceiveFromAsync(
 			   new(buffer),
@@ -85,9 +69,7 @@ namespace Aerit.MAVLink
 				return Task.CompletedTask;
 			}
 
-			return endPoint is null
-				? socket.SendAsync(new ArraySegment<byte>(buffer, 0, length), SocketFlags.None)
-				: socket.SendToAsync(new ArraySegment<byte>(buffer, 0, length), SocketFlags.None, endPoint);
+			return socket.SendToAsync(new ArraySegment<byte>(buffer, 0, length), SocketFlags.None, endPoint!);
 		}
 
 		public void Close() => Dispose();

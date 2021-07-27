@@ -11,25 +11,28 @@ Range of IDs:
 
 	<enums>
 		<enum name="MAV_CMD">
-
 			<entry value="60100" name="MAV_CMD_DO_DELIVERY" hasLocation="false" isDestination="false">
 				<description>Start Delivery</description>
 				<param index="1" label="DeliveryMode" minValue="0" maxValue="3" increment="1">Delivery Mode</param>
 			</entry>
-
-			<entry value="60101" name="MAV_CMD_DO_A" hasLocation="false" isDestination="false">
-				<description>Start Delivery A</description>
-				<param index="1" label="DeliveryMode" minValue="0" maxValue="3" increment="1">Delivery Mode</param>
-				<param index="2" label="MavMode" enum="MAV_MODE" default="NaN">Delivery Mode</param>
-				<param index="3" label="IncrementTest1" minValue="0" maxValue="8" increment="2">Delivery Mode</param>
-				<param index="4" label="IncrementTest2" minValue="3" maxValue="9" increment="3" default="NaN">Delivery Mode</param>
-			</entry>
-
-			<entry value="60102" name="MAV_CMD_DO_B" hasLocation="false" isDestination="false">
-				<description>Start Delivery B</description>
-				<param index="1" label="DeliveryMode" minValue="0">Delivery Mode</param>
+			<entry value="60100" name="MAV_CMD_CANCEL_DELIVERY" hasLocation="false" isDestination="false">
+				<description>Cancel Delivery</description>
 			</entry>
 		</enum>
 	</enums>
+
+	<messages>
+		<message id="60110" name="VIDEO_STREAM_SHOW_ANNOTATION">
+			<description>Show textual annotation overlayed on video stream</description>
+      		<field type="char[192]" name="text">Textual annotation</field>
+			<field type="uint8_t" name="target_system">System ID</field>
+			<field type="uint8_t" name="target_component">Component ID</field>
+		</message>
+		<message id="60111" name="VIDEO_STREAM_HIDE_ANNOTATION">
+			<description>Hide textual annotation overlayed on video stream</description>
+			<field type="uint8_t" name="target_system">System ID</field>
+			<field type="uint8_t" name="target_component">Component ID</field>
+		</message>
+	</messages>
 
 </mavlink>

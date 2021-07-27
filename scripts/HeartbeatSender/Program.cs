@@ -1,6 +1,5 @@
-﻿using System.Net;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Aerit.MAVLink;
 using Aerit.MAVLink.Protocols.Connection;
@@ -14,11 +13,22 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 		.AddConsole();
 });
 
-using var transmission = new UdpTransmissionChannel();
+using var transmission = new UdpTransmissionChannelOut(
+	Options.Create(new UdpTransmissionChannelOut.Options
+	{
+		Uri = "127.0.0.1:4001"
+	}));
 
-await transmission.ConnectAsync(IPEndPoint.Parse("127.0.0.1:3000"));
+await transmission.ConnectAsync();
 
-var client = new Client(loggerFactory.CreateLogger<Client>(), transmission, systemId: 1, componentId: 1);
+var client = new Client(
+	loggerFactory.CreateLogger<Client>(),
+	transmission,
+	Options.Create(new Client.Options
+	{
+		SystemId = 1,
+		ComponentId = 1
+	}));
 
 await using var heartbeat = new HeartbeatBroadcaster(client, 0, MavType.OnboardController, MavAutopilot.Invalid, 0x00);
 
@@ -26,12 +36,11 @@ await heartbeat.UpdateAsync(MavState.Boot);
 
 var pipeline = PipelineBuilder
 	.Create(loggerFactory)
-	.Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
-	.Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger))
+	.UsePacket()
 	.Map(map => map
 		.Add(branch => branch
-			.Append(() => new HeartbeatMiddleware())
-			.Append((ILogger<LogMessageEndpoint<Heartbeat>> logger) => new LogMessageEndpoint<Heartbeat>(logger)))
+			.Append<HeartbeatMiddleware>()
+			.Log())
 	)
 	.Build();
 

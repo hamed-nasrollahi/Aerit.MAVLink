@@ -15,7 +15,7 @@ namespace Aerit.MAVLink.Tests
 			// Arrange
 			var client = new Mock<ICommandClient>();
 
-			using var sut = new TargetCommandProgressHandler(client.Object, 1000);
+			using var sut = new TargetCommandProgressHandler(client.Object, 1, 42, 1000);
 
 			// Act
 			await Task.Delay(1500);
@@ -27,9 +27,23 @@ namespace Aerit.MAVLink.Tests
 			await sut.CompleteAsync(MavResult.Accepted);
 
 			// Assert
-			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o => o.Result == MavResult.InProgress && o.Progress == 0)), Times.Once);
-			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o => o.Result == MavResult.InProgress && o.Progress == 50)), Times.Exactly(2));
-			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o => o.Result == MavResult.Accepted)), Times.Once);
+			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o =>
+				o.Result == MavResult.InProgress
+				&& o.Progress == 0
+				&& o.TargetSystem == 1
+				&& o.TargetComponent == 42)), Times.Once);
+
+			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o => 
+				o.Result == MavResult.InProgress
+				&& o.Progress == 50
+				&& o.TargetSystem == 1
+				&& o.TargetComponent == 42)), Times.Exactly(2));
+
+			client.Verify(o => o.SendAsync(It.Is<CommandAck>(o =>
+				o.Result == MavResult.Accepted
+				&& o.TargetSystem == 1
+				&& o.TargetComponent == 42)), Times.Once);
+
 			client.VerifyNoOtherCalls();
 		}
 	}

@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 using Xunit;
 using Moq;
@@ -44,7 +45,7 @@ namespace Aerit.MAVLink.Store.Tests
 
 				// Act
 
-				using (var writer = new Store.Writer(NullLogger<Store.Writer>.Instance, path))
+				using (var writer = new Store.Writer(NullLogger<Store.Writer>.Instance, Options.Create(new Store.Writer.Options { Path = path })))
 				{
 					writer.Register(indexer.Object);
 
@@ -58,7 +59,7 @@ namespace Aerit.MAVLink.Store.Tests
 				indexer
 					.Verify(o => o.Run(It.IsAny<long>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once);
 
-				using var reader = new Store.Reader(path);
+				using var reader = new Store.Reader(Options.Create(new Store.Reader.Options { Path = path }));
 
 				var count = 0;
 				await foreach (var entry in reader.GetAsync(key))

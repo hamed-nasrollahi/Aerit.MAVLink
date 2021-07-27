@@ -441,7 +441,7 @@ namespace Aerit.MAVLink.Generator
 								}
 								else
 								{
-									builder.AppendLine($@"            buffer[{index++}] = {fieldName}[{i}];");
+									builder.AppendLine($@"            buffer[{index++}] = ({fieldName} is not null && {fieldName}.Length > {i}) ? {fieldName}[{i}] : (byte)0x00;");
 								}
 							}
 						}

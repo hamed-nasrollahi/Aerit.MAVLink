@@ -1,6 +1,5 @@
-﻿using System.Net;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Aerit.MAVLink;
 using Aerit.MAVLink.Protocols.Command;
@@ -16,19 +15,28 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 
 var logger = loggerFactory.CreateLogger("Main");
 
-using var transmission = new UdpTransmissionChannel(IPEndPoint.Parse("0.0.0.0:3000"));
+using var transmission = new UdpTransmissionChannelIn(
+	Options.Create(new UdpTransmissionChannelIn.Options
+	{
+		Uri = "0.0.0.0:3000"
+	}));
 
-using var client = new Client(loggerFactory.CreateLogger<Client>(), transmission, systemId: 10, componentId: 1);
+using var client = new Client(
+	loggerFactory.CreateLogger<Client>(),
+	transmission, Options.Create(new Client.Options
+	{
+		SystemId = 10,
+		ComponentId = 1
+	}));
 
 var registry = new TargetCommandHandlerRegistry(client);
 
 var pipeline = PipelineBuilder
 	.Create(loggerFactory)
-	.Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
-	.Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger))
+	.UsePacket()
 	.Map(map => map
 		.Add(branch => branch
-			.Append(() => new CommandLongMiddleware())
+			.Append<CommandLongMiddleware>()
             .Enpoint(async (systemId, componentId, msg, token) => 
 			{
 				logger.LogInformation("{command} received from {systemId}/{componentId}", msg, systemId, componentId);
@@ -53,7 +61,7 @@ var pipeline = PipelineBuilder
 				return true;
 			}))
 		.Add(branch => branch
-			.Append(() => new CommandCancelMiddleware())
+			.Append<CommandCancelMiddleware>()
             .Enpoint((systemId, componentId, msg) => 
 			{
 				logger.LogInformation("{cancel} received", msg);

@@ -101,4 +101,30 @@ namespace Aerit.MAVLink
 			return Next.ProcessAsync(buffer, token);
 		}
 	}
+
+	public class BufferEndpoint : IBufferMiddleware
+	{
+		private readonly Func<ReadOnlyMemory<byte>, bool> process;
+
+		public BufferEndpoint(Func<ReadOnlyMemory<byte>, bool> process)
+		{
+			this.process = process;
+		}
+
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
+			=> Task.FromResult(process(buffer));
+	}
+
+	public class BufferAsyncEndpoint : IBufferMiddleware
+	{
+		private readonly Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process;
+
+		public BufferAsyncEndpoint(Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process)
+		{
+			this.process = process;
+		}
+
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
+			=> process(buffer, token);
+	}
 }

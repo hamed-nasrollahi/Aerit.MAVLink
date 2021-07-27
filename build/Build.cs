@@ -39,13 +39,16 @@ class Build : NukeBuild
 	AbsolutePath MessagesTestsDestination => TestsDestination / "Messages";
 	AbsolutePath CommandsTestsDestination => TestsDestination / "Commands";
 
-	// AbsolutePath OutputDirectory => RootDirectory / "output";
+	AbsolutePath OutputDirectory => RootDirectory / "output";
 
 	[Parameter("Namespace")]
     string Namespace { get; set; } = "Aerit.MAVLink";
 
     [Parameter("Generate tests for deprecated messages")]
     bool TestDeprecated { get; set; }
+
+	[Parameter("The API key for github packages")]
+    string GithubApiKey { get; set; }
 
     [PathExecutable("git")]
     readonly Tool Git;
@@ -119,10 +122,36 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetTest(s => s
+			DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild());
         });
+
+    Target Pack => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+			DotNetPack(s => s
+                .SetProject(SourceDirectory / "Aerit.MAVLink")
+                .SetConfiguration(Configuration.Release)
+                .SetOutputDirectory(OutputDirectory));
+        });
+
+    Target Push => _ => _
+        //.DependsOn(Pack)
+        .Executes(() =>
+		{
+			var version = Solution
+				.GetProject("Aerit.MAVLink")
+				.GetProperty("Version");
+
+			/*
+			DotNetNuGetPush(s => s
+                //.SetTargetPath(OutputDirectory / $"Aerit.MAVLink.{version}.nupkg")
+                .SetSource("https://nuget.pkg.github.com/pablofrommars/index.json")
+                .SetApiKey(GithubApiKey)) //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
+            */
+		});
 }
