@@ -15,7 +15,7 @@ namespace Aerit.MAVLink.Tests
 			// Arrange
 			var client = new Mock<IHeartbeatClient>();
 
-			var sut = new HeartbeatBroadcaster(client.Object, 0, MavType.OnboardController, MavAutopilot.Invalid, 0x00);
+			var sut = new HeartbeatBroadcaster(client.Object, MavType.OnboardController);
 
 			// Act
 			await Task.Delay(200);

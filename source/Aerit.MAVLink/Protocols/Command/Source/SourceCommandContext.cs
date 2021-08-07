@@ -25,7 +25,7 @@ namespace Aerit.MAVLink.Protocols.Command
 
         public CommandLong CommandLong { get; }
 
-        public MavResult? Result { get; set; }
+        public MavResult? Result { get; internal set; }
 
         public Task WaitAsync(CancellationToken token = default)
             => handler.WaitAsync(token);

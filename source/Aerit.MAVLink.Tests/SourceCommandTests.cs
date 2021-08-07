@@ -204,5 +204,59 @@ namespace Aerit.MAVLink.Tests
 
             Assert.Equal(MavResult.Cancelled, sut.Result);
         }
+
+        [Fact]
+        public async Task RetryCancelInProgress()
+        {
+            // Arrange
+            var client = new Mock<ICommandClient>();
+
+            using var handler = new SourceCommandHandler(client.Object, 1000, 10, 5000);
+
+            client
+                .Setup(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 0)))
+                .Callback<CommandLong>(async o =>
+                {
+                    await handler.EnqueueAsync(new()
+                    {
+                        Command = o.Command,
+                        Result = MavResult.InProgress
+                    }, default);
+                });
+
+			var sendCancelCount = 0;
+
+			client
+                .Setup(o => o.SendAsync(It.IsAny<CommandCancel>()))
+                .Callback<CommandCancel>(async o =>
+                {
+					if (++sendCancelCount == 3)
+					{
+						await handler.EnqueueAsync(new()
+						{
+							Command = o.Command,
+							Result = MavResult.Cancelled
+						}, default);
+					}
+				});
+
+            var command = new CommandLong { Command = MavCmd.DoWinch };
+            
+            // Act
+            await using var sut = new SourceCommandContext(handler, command);
+
+            await Task.Delay(200);
+
+            sut.Cancel();
+
+            await sut.WaitAsync();
+
+            // Assert
+            client.Verify(o => o.SendAsync(It.Is<CommandLong>(cmd => cmd.Confirmation == 0)), Times.Once);
+            client.Verify(o => o.SendAsync(It.IsAny<CommandCancel>()), Times.Exactly(3));
+            client.VerifyNoOtherCalls();
+
+            Assert.Equal(MavResult.Cancelled, sut.Result);
+        }
     }
 }

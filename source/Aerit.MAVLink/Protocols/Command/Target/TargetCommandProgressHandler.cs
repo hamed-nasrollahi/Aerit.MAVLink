@@ -11,15 +11,17 @@ namespace Aerit.MAVLink.Protocols.Command
 		private readonly Channel<byte> channel = Channel.CreateUnbounded<byte>();
 
 		private readonly ICommandClient client;
+		private readonly MavCmd command;
 		private readonly byte targetSystem;
 		private readonly byte targetComponent;
 		private readonly int period;
 
 		private readonly Task background;
 
-		public TargetCommandProgressHandler(ICommandClient client, byte targetSystem, byte targetComponent, int period)
+		public TargetCommandProgressHandler(ICommandClient client, MavCmd command, byte targetSystem, byte targetComponent, int period = 1000)
 		{
 			this.client = client;
+			this.command = command;
 			this.targetSystem = targetSystem;
 			this.targetComponent = targetComponent;
 			this.period = period;
@@ -61,6 +63,7 @@ namespace Aerit.MAVLink.Protocols.Command
 
 				await client.SendAsync(new CommandAck
 				{
+					Command = command,
 					Result = MavResult.InProgress,
 					Progress = progress,
 					TargetSystem = targetSystem,
@@ -85,6 +88,7 @@ namespace Aerit.MAVLink.Protocols.Command
 
 			await client.SendAsync(new CommandAck
 			{
+				Command = command,
 				Result = result,
 				TargetSystem = targetSystem,
 				TargetComponent = targetComponent

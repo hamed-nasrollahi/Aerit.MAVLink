@@ -21,6 +21,8 @@ namespace Aerit.MAVLink.Protocols.Command
 		public bool TryAcquire()
 			=> Interlocked.CompareExchange(ref acquired, 1, 0) == 0;
 
+		public CancellationToken Token => cancellation.Token;
+
 		private int cancelled = 0;
 
 		public void Cancel()

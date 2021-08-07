@@ -13,8 +13,12 @@ Route mavlink packets between endpoints.
 
 	* Debug:
 
+	# Linux:
 	$ docker run --name mavlink-router -p 3000:3000/udp -v /home/pablo/source/Aerit.MAVLink/config/mavlink-router/etc:/mavlink-router/etc mavlink-router:latest
 
+	# Mac:
+	$ docker run --name mavlink-router -p 3000:3000/udp -v /Users/pablo/source/Aerit.MAVLink/config/mavlink-router/etc:/mavlink-router/etc mavlink-router:latest
+	
 	* Drone:
 
 	$ docker run --name mavlink-router --device /dev/ttyAMA1 -p 3000:3000/udp -v /home/pi/etc/mavlink-router:/mavlink-router/etc mavlink-router:latest

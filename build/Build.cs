@@ -80,11 +80,16 @@ class Build : NukeBuild
         {
             EnsureExistingDirectory(GeneratedDestination);
             EnsureExistingDirectory(EnumsDestination);
+            EnsureCleanDirectory(EnumsDestination);
             EnsureExistingDirectory(MessagesDestination);
+            EnsureCleanDirectory(MessagesDestination);
             EnsureExistingDirectory(CommandsDestination);
+            EnsureCleanDirectory(CommandsDestination);
             EnsureExistingDirectory(TestsDestination);
             EnsureExistingDirectory(MessagesTestsDestination);
+            EnsureCleanDirectory(MessagesTestsDestination);
             EnsureExistingDirectory(CommandsTestsDestination);
+            EnsureCleanDirectory(CommandsTestsDestination);
 
             Generator.Run(new(
                 // Definitions: (DefinitionsDirectory, "common.xml"),

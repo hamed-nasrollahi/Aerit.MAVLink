@@ -35,7 +35,7 @@ namespace Aerit.MAVLink.Generator
 			builder.AppendLine($"    public record {cmd.Name}");
 			builder.AppendLine("    {");
 
-			builder.AppendLine($"        public const ushort MAVLinkCommand = {cmd.Value};");
+			builder.AppendLine($"        public const MavCmd MAVLinkCommand = MavCmd.{cmd.Name};");
 
 			foreach (var param in cmd.Params)
 			{
@@ -165,6 +165,7 @@ namespace Aerit.MAVLink.Generator
 			{
 				var assignments = new List<string>
 				{
+					"            Command = MAVLinkCommand",
 					"            TargetSystem = targetSystem",
 					"            TargetComponent = targetComponent"
 				};

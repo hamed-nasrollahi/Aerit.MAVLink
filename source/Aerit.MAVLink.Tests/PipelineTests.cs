@@ -40,7 +40,7 @@ namespace Aerit.MAVLink.Tests
 
             var pipeline = PipelineBuilder
                 .Create(NullLoggerFactory.Instance)
-                .Append(() => new MatchBufferMiddleware { Target = (1, 42) })
+                .Append(() => new MatchBufferMiddleware { Target = (1, MavComponent.MavCompIdOnboardComputer) })
                 .Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
                 .Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger))
                 .Map(map => map
@@ -62,7 +62,7 @@ namespace Aerit.MAVLink.Tests
                 Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
             // Act

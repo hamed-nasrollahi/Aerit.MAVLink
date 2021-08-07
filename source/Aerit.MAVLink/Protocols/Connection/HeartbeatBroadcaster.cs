@@ -11,19 +11,19 @@ namespace Aerit.MAVLink.Protocols.Connection
 		private readonly Channel<MavState> channel = Channel.CreateUnbounded<MavState>();
 
 		private readonly IHeartbeatClient client;
-		private readonly uint customMode;
 		private readonly MavType type;
+		private readonly uint customMode;
 		private readonly MavAutopilot autopilot;
 		private readonly MavModeFlag baseMode;
 		private readonly int period;
 
 		private readonly Task background;
 
-		public HeartbeatBroadcaster(IHeartbeatClient client, uint customMode, MavType type, MavAutopilot autopilot, MavModeFlag baseMode, int period = 1000)
+		public HeartbeatBroadcaster(IHeartbeatClient client, MavType type, uint customMode = 0, MavAutopilot autopilot = MavAutopilot.Invalid, MavModeFlag baseMode = 0, int period = 1000)
 		{
 			this.client = client;
-			this.customMode = customMode;
 			this.type = type;
+			this.customMode = customMode;
 			this.autopilot = autopilot;
 			this.baseMode = baseMode;
 			this.period = period;

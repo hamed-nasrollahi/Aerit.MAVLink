@@ -36,13 +36,13 @@ namespace Aerit.MAVLink.Store.Tests
 				Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
 			// Act
 			await sut.SendAsync(message);
 
-			var expected = Keys.Compute(1, 42);
+			var expected = Keys.Compute(1, (byte)MavComponent.MavCompIdOnboardComputer);
 
 			// Assert
 			try
@@ -69,7 +69,7 @@ namespace Aerit.MAVLink.Store.Tests
 			var message = new CommandLong
 			{
 				TargetSystem = 2,
-				TargetComponent = 42
+				TargetComponent = (byte)MavComponent.MavCompIdOnboardComputer
 			};
 
 			var transmissionChannel = new Mock<ITransmissionChannel>();
@@ -89,13 +89,13 @@ namespace Aerit.MAVLink.Store.Tests
 				Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
 			// Act
 			await sut.SendAsync(message);
 
-			var expected = Keys.Compute(CommandLong.MAVLinkMessageId, 2, 42);
+			var expected = Keys.Compute(CommandLong.MAVLinkMessageId, 2, (byte)MavComponent.MavCompIdOnboardComputer);
 
 			// Assert
 			try

@@ -8,13 +8,6 @@ namespace Aerit.MAVLink.Protocols.Command
 	{
 		private readonly ConcurrentDictionary<(byte systemId, byte componentId, MavCmd command), TargetCommandHandler> handlers = new();
 
-		private readonly ICommandClient client;
-
-		public TargetCommandHandlerRegistry(ICommandClient client)
-		{
-			this.client = client;
-		}
-
 		public bool TryGet(byte systemId, byte componentId, MavCmd command, out TargetCommandHandler? handler)
 			=> handlers.TryGetValue((systemId, componentId, command), out handler);
 

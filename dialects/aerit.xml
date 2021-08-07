@@ -11,12 +11,14 @@ Range of IDs:
 
 	<enums>
 		<enum name="MAV_CMD">
-			<entry value="60100" name="MAV_CMD_DO_DELIVERY" hasLocation="false" isDestination="false">
-				<description>Start Delivery</description>
-				<param index="1" label="DeliveryMode" minValue="0" maxValue="3" increment="1">Delivery Mode</param>
+			<entry value="60100" name="MAV_CMD_DO_PRE_DELIVERY" hasLocation="false" isDestination="false">
+				<description>Start PreDelivery</description>
 			</entry>
-			<entry value="60100" name="MAV_CMD_CANCEL_DELIVERY" hasLocation="false" isDestination="false">
-				<description>Cancel Delivery</description>
+			<entry value="60101" name="MAV_CMD_DO_PICK_UP" hasLocation="false" isDestination="false">
+				<description>Start Pick-Up</description>
+			</entry>
+			<entry value="60102" name="MAV_CMD_DO_DELIVERY" hasLocation="false" isDestination="false">
+				<description>Start Delivery</description>
 			</entry>
 		</enum>
 	</enums>

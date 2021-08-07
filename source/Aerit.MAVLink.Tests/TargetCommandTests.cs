@@ -15,7 +15,7 @@ namespace Aerit.MAVLink.Tests
 			// Arrange
 			var client = new Mock<ICommandClient>();
 
-			using var sut = new TargetCommandProgressHandler(client.Object, 1, 42, 1000);
+			using var sut = new TargetCommandProgressHandler(client.Object, MavCmd.DoJump, 1, 42, 1000);
 
 			// Act
 			await Task.Delay(1500);

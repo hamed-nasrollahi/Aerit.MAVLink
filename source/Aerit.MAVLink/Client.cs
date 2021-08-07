@@ -26,13 +26,13 @@ namespace Aerit.MAVLink
 		{
 			public byte SystemId { get; set; }
 
-			public byte ComponentId { get; set; }
+			public MavComponent ComponentId { get; set; }
 		}
 
 		private readonly ILogger<Client> logger;
 		private readonly ITransmissionChannel transmissionChannel;
 
-		private readonly SourceCommandHandlerRegistry commandHandlers;
+		private readonly SourceCommandHandlerRegistry sourceCommandHandlers;
 
 		private readonly Instant boot = SystemClock.Instance.GetCurrentInstant();
 
@@ -41,7 +41,7 @@ namespace Aerit.MAVLink
 			this.logger = logger;
 			this.transmissionChannel = transmissionChannel;
 
-			commandHandlers = new(this);
+			sourceCommandHandlers = new(this);
 
 			SystemId = options.Value.SystemId;
 			ComponentId = options.Value.ComponentId;
@@ -49,7 +49,7 @@ namespace Aerit.MAVLink
 
 		public byte SystemId { get; }
 
-		public byte ComponentId { get; }
+		public MavComponent ComponentId { get; }
 
 		public uint TimeBootMs() => (uint)(SystemClock.Instance.GetCurrentInstant() - boot).TotalMilliseconds;
 
@@ -63,7 +63,7 @@ namespace Aerit.MAVLink
 			buffer[3] = 0x00;
 			buffer[4] = 0x00;
 			buffer[5] = SystemId;
-			buffer[6] = ComponentId;
+			buffer[6] = (byte)ComponentId;
 
 			buffer[7] = (byte)messageID;
 			buffer[8] = (byte)(messageID >> 8);
@@ -168,7 +168,7 @@ namespace Aerit.MAVLink
 
 		public SourceCommandContext? Submit(CommandLong command)
 		{
-			if (commandHandlers.TryAcquire(command.TargetSystem, command.TargetComponent, command.Command, out var handler))
+			if (sourceCommandHandlers.TryAcquire(command.TargetSystem, command.TargetComponent, command.Command, out var handler))
 			{
 				return new SourceCommandContext(handler!, command);
 			}
@@ -177,7 +177,7 @@ namespace Aerit.MAVLink
 		}
 
 		public CommandAckEnpoint CommandAckEnpoint()
-			=> new(commandHandlers);
+			=> new(sourceCommandHandlers);
 
 		private static readonly Counter IncomingBuffersCount = Metrics
 			.CreateCounter("mavlink_buffers_incoming_total", "Number of incoming mavlink buffers.");

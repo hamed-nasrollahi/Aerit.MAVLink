@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,7 +58,9 @@ namespace Aerit.MAVLink
 
 	public static class PipelineBuilderExtensions
 	{
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node, Func<TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(
+			this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node,
+			Func<TNode> builder)
 			where T : IMiddleware
 			where TNode : IBufferMiddleware
 		{
@@ -68,7 +71,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node, Func<ILogger<TNode>, TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(
+			this (PipelineBuilder<T> builder, IBufferMiddlewareOutput last) node,
+			Func<ILogger<TNode>, TNode> builder)
 			where T : IMiddleware
 			where TNode : IBufferMiddleware
 		{
@@ -79,7 +84,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Func<TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(
+			this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node,
+			Func<TNode> builder)
 			where T : IMiddleware
 			where TNode : IPacketMiddleware
 		{
@@ -90,7 +97,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Func<ILogger<TNode>, TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode>(
+			this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node,
+			Func<ILogger<TNode>, TNode> builder)
 			where T : IMiddleware
 			where TNode : IPacketMiddleware
 		{
@@ -101,7 +110,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, PacketMapMiddleware last) Map<T>(this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node, Action<PacketMapMiddleware> builder)
+		public static (PipelineBuilder<T> builder, PacketMapMiddleware last) Map<T>(
+			this (PipelineBuilder<T> builder, IPacketMiddlewareOutput last) node,
+			Action<PacketMapMiddleware> builder)
 			where T : IMiddleware
 		{
 			var map = new PacketMapMiddleware(node.builder.ILoggerFactory);
@@ -113,20 +124,44 @@ namespace Aerit.MAVLink
 			return (node.builder, map);
 		}
 
+		public static (PipelineBuilder<IBufferMiddleware> builder, MatchBufferMiddleware last) UseMatchBuffer(
+			this PipelineBuilder<IBufferMiddleware> builder,
+			HashSet<uint> ids = null,
+			(byte? systemId, MavComponent? componentId)? target = null)
+			=> builder
+				.Append(() => new MatchBufferMiddleware
+				{
+					Ids = ids,
+					Target = target
+				});
+
 		public static (PipelineBuilder<IBufferMiddleware> builder, PacketValidationMiddleware last) UsePacket(this PipelineBuilder<IBufferMiddleware> builder)
 			=> builder
 				.Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
 				.Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger));
 
-		public static (PipelineBuilder<IBufferMiddleware> builder, BufferEndpoint last) Endpoint(this PipelineBuilder<IBufferMiddleware> builder, Func<ReadOnlyMemory<byte>, bool> process)
+		public static (PipelineBuilder<IBufferMiddleware> builder, PacketValidationMiddleware last) UsePacket<TNode>(
+			this (PipelineBuilder<IBufferMiddleware> builder, TNode last) node)
+			where TNode : IBufferMiddlewareOutput
+			=> node
+				.Append((ILogger<PacketMiddleware> logger) => new PacketMiddleware(logger))
+				.Append((ILogger<PacketValidationMiddleware> logger) => new PacketValidationMiddleware(logger));
+
+		public static (PipelineBuilder<IBufferMiddleware> builder, BufferEndpoint last) Endpoint(
+			this PipelineBuilder<IBufferMiddleware> builder,
+			Func<ReadOnlyMemory<byte>, bool> process)
 			=> builder
 				.Append(() => new BufferEndpoint(process));
 
-		public static (PipelineBuilder<IBufferMiddleware> builder, BufferAsyncEndpoint last) Endpoint(this PipelineBuilder<IBufferMiddleware> builder, Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process)
+		public static (PipelineBuilder<IBufferMiddleware> builder, BufferAsyncEndpoint last) Endpoint(
+			this PipelineBuilder<IBufferMiddleware> builder,
+			Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process)
 			=> builder
 				.Append(() => new BufferAsyncEndpoint(process));
 
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(
+			this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node,
+			Func<TNode> builder)
 				where T : IMiddleware
 				where TNode : IMessageMiddleware<TMessage>
 		{
@@ -137,7 +172,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<ILogger<TNode>, TNode> builder)
+		public static (PipelineBuilder<T> builder, TNode last) Append<T, TNode, TMessage>(
+			this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node,
+			Func<ILogger<TNode>, TNode> builder)
 			where T : IMiddleware
 			where TNode : IMessageMiddleware<TMessage>
 		{
@@ -148,7 +185,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, MessageEndpoint<TMessage> last) Enpoint<T, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<byte, byte, TMessage, bool> process)
+		public static (PipelineBuilder<T> builder, MessageEndpoint<TMessage> last) Enpoint<T, TMessage>(
+			this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node,
+			Func<byte, byte, TMessage, bool> process)
 			where T : IMiddleware
 		{
 			var last = new MessageEndpoint<TMessage>(process);
@@ -158,7 +197,9 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, MessageAsyncEndpoint<TMessage> last) Enpoint<T, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node, Func<byte, byte, TMessage, CancellationToken, Task<bool>> process)
+		public static (PipelineBuilder<T> builder, MessageAsyncEndpoint<TMessage> last) Enpoint<T, TMessage>(
+			this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node,
+			Func<byte, byte, TMessage, CancellationToken, Task<bool>> process)
 			where T : IMiddleware
 		{
 			var last = new MessageAsyncEndpoint<TMessage>(process);
@@ -168,7 +209,8 @@ namespace Aerit.MAVLink
 			return (node.builder, last);
 		}
 
-		public static (PipelineBuilder<T> builder, LogMessageEndpoint<TMessage> last) Log<T, TMessage>(this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node)
+		public static (PipelineBuilder<T> builder, LogMessageEndpoint<TMessage> last) Log<T, TMessage>(
+			this (PipelineBuilder<T> builder, IMessageMiddlewareOutput<TMessage> last) node)
 			where T : IMiddleware
 		{
 			var last = new LogMessageEndpoint<TMessage>(node.builder.ILoggerFactory.CreateLogger<LogMessageEndpoint<TMessage>>());

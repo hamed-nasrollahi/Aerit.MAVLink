@@ -24,7 +24,7 @@ namespace Aerit.MAVLink.Tests
 			var transmissionChannel = new Mock<ITransmissionChannel>();
 
 			byte systemId = 0;
-			byte componentId = 0;
+			MavComponent componentId = 0;
 			uint messageId = 0;
 			ReadOnlyMemory<byte>? payload = null;
 
@@ -33,7 +33,7 @@ namespace Aerit.MAVLink.Tests
 				.Callback<byte[], int>((buffer, length) =>
 				{
                     systemId = Packet.DeserializeSystemId(buffer) ?? 0;
-					componentId = Packet.DeserializeComponentId(buffer) ?? 0;
+					componentId = (MavComponent)(Packet.DeserializeComponentId(buffer) ?? 0);
 					messageId = Packet.DeserializeMessageId(buffer) ?? 0;
 					payload = Packet.SlicePayload(buffer);
 				});
@@ -44,7 +44,7 @@ namespace Aerit.MAVLink.Tests
 				Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
 			// Act
@@ -52,7 +52,7 @@ namespace Aerit.MAVLink.Tests
 
 			// Assert
 			Assert.Equal(1, systemId);
-			Assert.Equal(42, componentId);
+			Assert.Equal(MavComponent.MavCompIdOnboardComputer, componentId);
 			Assert.Equal(Heartbeat.MAVLinkMessageId, messageId);
 			Assert.NotNull(payload);
 		}
@@ -67,7 +67,7 @@ namespace Aerit.MAVLink.Tests
 
 			byte sequence = 0;
 			byte systemId = 0;
-			byte componentId = 0;
+			MavComponent componentId = 0;
 			uint messageId = 0;
 
 			transmissionChannel
@@ -79,7 +79,7 @@ namespace Aerit.MAVLink.Tests
 					{
 						sequence = packet.Sequence;
 						systemId = packet.SystemId;
-						componentId = packet.ComponentId;
+						componentId = (MavComponent)packet.ComponentId;
 						messageId = packet.MessageId;
 					}
 				});
@@ -90,7 +90,7 @@ namespace Aerit.MAVLink.Tests
 				Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
 			// Act
@@ -107,7 +107,7 @@ namespace Aerit.MAVLink.Tests
 
 			Assert.Equal(4, sequence);
 			Assert.Equal(1, systemId);
-			Assert.Equal(42, componentId);
+			Assert.Equal(MavComponent.MavCompIdOnboardComputer, componentId);
 			Assert.Equal(Heartbeat.MAVLinkMessageId, messageId);
 		}
 
@@ -131,7 +131,7 @@ namespace Aerit.MAVLink.Tests
 				Options.Create(new Client.Options
 				{
 					SystemId = 1,
-					ComponentId = 42
+					ComponentId = MavComponent.MavCompIdOnboardComputer
 				}));
 
 			// Act
