@@ -1,3 +1,6 @@
+#nullable enable 
+
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +14,8 @@ namespace Aerit.MAVLink.Protocols.Command
 		{
 			this.handlers = handlers;
 		}
+
+		public IEnumerable<uint>? Ids => null;
 
 		public async Task<bool> ProcessAsync(byte systemId, byte componentId, CommandAck message, CancellationToken token)
 		{

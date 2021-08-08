@@ -31,17 +31,13 @@ var client = new Client(
 	Options.Create(new Client.Options
 	{
 		SystemId = 1,
-		ComponentId = 1
+		ComponentId = (MavComponent)1
 	}));
 
 var pipeline = PipelineBuilder
 	.Create(loggerFactory)
 	.UsePacket()
-	.Map(map => map
-		.Add(branch => branch
-			.Append<CommandAckMiddleware>()
-			.Append(() => client.CommandAckEnpoint()))
-	)
+	.Map(map => map.CommandAckEndpoint(() => client.CommandAckEnpoint()))
 	.Build();
 
 var cancellation = new CancellationTokenSource();

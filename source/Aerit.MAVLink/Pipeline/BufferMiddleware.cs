@@ -13,7 +13,7 @@ namespace Aerit.MAVLink
 
 	public interface IBufferMiddleware : IMiddleware
 	{
-		Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
+		Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, PipelineContext context, CancellationToken token);
 	}
 
 	public interface IBufferMiddlewareOutput
@@ -21,110 +21,124 @@ namespace Aerit.MAVLink
 		IBufferMiddleware? Next { get; set; }
 	}
 
-	public class MatchBufferMiddleware : IBufferMiddleware, IBufferMiddlewareOutput
+	public class FilterBufferMiddleware : IBufferMiddleware, IBufferMiddlewareOutput
 	{
-		public HashSet<uint>? Ids { get; init; }
+		private readonly bool target;
+		private readonly bool ids;
 
-		public (byte? systemId, MavComponent? componentId)? Target { get; init; }
+		public FilterBufferMiddleware(bool target = true, bool ids = true)
+		{
+			this.target = target;
+			this.ids = ids;
+		}
+
+		public IEnumerable<uint>? Ids => null;
 
 		public IBufferMiddleware? Next { get; set; }
 
 		private static readonly Counter MatchedBuffersCount = Metrics
 			.CreateCounter("mavlink_buffers_matched_total", "Number of mavlink buffers matched.");
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, PipelineContext context, CancellationToken token)
 		{
 			if (Next is null)
 			{
 				return Task.FromResult(false);
 			}
 
-			bool match = false;
-
-			switch ((Magic)buffer.Span[0])
+			if (ids || target)
 			{
-				case Magic.V1:
-					{
-						var id = V1.Packet.DeserializeMessageId(buffer);
-						if (id is null)
+				bool match = false;
+
+				switch ((Magic)buffer.Span[0])
+				{
+					case Magic.V1:
 						{
-							break;
-						}
+							var id = V1.Packet.DeserializeMessageId(buffer);
+							if (id is null)
+							{
+								break;
+							}
 
-						if (Ids is not null && !Ids.Contains(id.Value))
+							if (ids && !context.Ids.Contains(id.Value))
+							{
+								break;
+							}
+
+							if (target && !Match(id.Value, buffer.Span[6..], context.Target.systemId, context.Target.componentId))
+							{
+								break;
+							}
+
+							match = true;
+						}
+						break;
+
+					case Magic.V2:
 						{
-							break;
+							var id = V2.Packet.DeserializeMessageId(buffer);
+							if (id is null)
+							{
+								break;
+							}
+
+							if (ids && !context.Ids.Contains(id.Value))
+							{
+								break;
+							}
+
+							if (target && !Match(id.Value, buffer.Span[10..], context.Target.systemId, context.Target.componentId))
+							{
+								break;
+							}
+
+							match = true;
 						}
+						break;
 
-                        if (Target is not null && !Match(id.Value, buffer.Span[6..], Target.Value.systemId, (byte?)Target.Value.componentId))
-						{
-							break;
-						}
+					default:
+						break;
+				}
 
-						match = true;
-					}
-					break;
-
-				case Magic.V2:
-					{
-						var id = V2.Packet.DeserializeMessageId(buffer);
-						if (id is null)
-						{
-							break;
-						}
-
-						if (Ids is not null && !Ids.Contains(id.Value))
-						{
-							break;
-						}
-
-                        if (Target is not null && !Match(id.Value, buffer.Span[10..], Target.Value.systemId, (byte?)Target.Value.componentId))
-						{
-							break;
-						}
-
-						match = true;
-					}
-					break;
-
-				default:
-					break;
-			}
-
-			if (!match)
-			{
-				return Task.FromResult(false);
+				if (!match)
+				{
+					return Task.FromResult(false);
+				}
 			}
 
 			MatchedBuffersCount.Inc();
 
-			return Next.ProcessAsync(buffer, token);
+			return Next.ProcessAsync(buffer, context, token);
 		}
 	}
 
 	public class BufferEndpoint : IBufferMiddleware
 	{
-		private readonly Func<ReadOnlyMemory<byte>, bool> process;
+		private readonly Func<ReadOnlyMemory<byte>, PipelineContext, bool> process;
 
-		public BufferEndpoint(Func<ReadOnlyMemory<byte>, bool> process)
+		public BufferEndpoint(Func<ReadOnlyMemory<byte>, PipelineContext, bool> process)
 		{
 			this.process = process;
 		}
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
-			=> Task.FromResult(process(buffer));
+		public IEnumerable<uint>? Ids => null;
+
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, PipelineContext context, CancellationToken token)
+			=> Task.FromResult(process(buffer, context));
 	}
 
 	public class BufferAsyncEndpoint : IBufferMiddleware
 	{
-		private readonly Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process;
+		private readonly Func<ReadOnlyMemory<byte>, PipelineContext, CancellationToken, Task<bool>> process;
 
-		public BufferAsyncEndpoint(Func<ReadOnlyMemory<byte>, CancellationToken, Task<bool>> process)
+		public BufferAsyncEndpoint(Func<ReadOnlyMemory<byte>, PipelineContext, CancellationToken, Task<bool>> process)
 		{
 			this.process = process;
 		}
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
-			=> process(buffer, token);
+		public IEnumerable<uint>? Ids => null;
+
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, PipelineContext context, CancellationToken token)
+			=> process(buffer, context, token);
 	}
 }

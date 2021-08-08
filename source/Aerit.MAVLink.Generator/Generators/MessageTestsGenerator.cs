@@ -173,7 +173,7 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine();
             builder.AppendLine("            // Act");
             builder.AppendLine("            message.Serialize(buffer);");
-            builder.AppendLine($"            var match = {name}.Match(buffer, (byte?)targetSystem, (byte?)targetComponent);");
+            builder.AppendLine($"            var match = {name}.Match(buffer, (byte?)targetSystem, (MavComponent?)((byte?)targetComponent));");
             builder.AppendLine();
             builder.AppendLine("            // Assert");
             builder.AppendLine("            Assert.Equal(expected, match);");

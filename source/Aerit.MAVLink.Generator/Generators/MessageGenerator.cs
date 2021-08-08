@@ -25,8 +25,13 @@ namespace Aerit.MAVLink.Generator
 				builder.AppendLine("using System.Buffers.Binary;");
 			}
 
+			builder.AppendLine("using System.Collections.Generic;");
 			builder.AppendLine("using System.Threading;");
 			builder.AppendLine("using System.Threading.Tasks;");
+
+			builder.AppendLine();
+
+			builder.AppendLine("using Microsoft.Extensions.Logging;");
 
 			builder.AppendLine();
 
@@ -1156,7 +1161,7 @@ namespace Aerit.MAVLink.Generator
 
 			builder.AppendLine();
 
-			builder.AppendLine("        public static bool Match(ReadOnlySpan<byte> span, byte? targetSystem, byte? targetComponent)");
+			builder.AppendLine("        public static bool Match(ReadOnlySpan<byte> span, byte? targetSystem, MavComponent? targetComponent)");
 			if (targetSystemIndex is not null && targetComponentIndex is not null)
 			{
 				builder.AppendLine("        {");
@@ -1176,7 +1181,7 @@ namespace Aerit.MAVLink.Generator
 				builder.AppendLine("                return true;");
 				builder.AppendLine("            }");
 				builder.AppendLine();
-				builder.AppendLine($"            var messageTargetComponent = (byte)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
+				builder.AppendLine($"            var messageTargetComponent = (MavComponent)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
 				builder.AppendLine();
 				builder.AppendLine("            return messageTargetComponent == 0 || messageTargetComponent == targetComponent;");
 				builder.AppendLine("        }");
@@ -1203,7 +1208,7 @@ namespace Aerit.MAVLink.Generator
 				builder.AppendLine("                return true;");
 				builder.AppendLine("            }");
 				builder.AppendLine();
-				builder.AppendLine($"            var messageTargetComponent = (byte)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
+				builder.AppendLine($"            var messageTargetComponent = (MavComponent)(span.Length >= {targetComponentIndex + 1} ? span[{targetComponentIndex}] : 0x00);");
 				builder.AppendLine();
 				builder.AppendLine("            return messageTargetComponent == 0 || messageTargetComponent == targetComponent;");
 				builder.AppendLine("        }");
@@ -1239,6 +1244,8 @@ namespace Aerit.MAVLink.Generator
 
 			builder.AppendLine($"    public class {name}Middleware : IPacketMapBranch, IMessageMiddlewareOutput<{name}>");
 			builder.AppendLine("    {");
+			builder.AppendLine($@"        public IEnumerable<uint>? Ids => new[] {{ {name}.MAVLinkMessageId }};");
+			builder.AppendLine();
 			builder.AppendLine($@"        public IMessageMiddleware<{name}>? Next {{ get; set; }}");
 			builder.AppendLine();
 			builder.AppendLine("        public bool Eval(V1.Packet packet)");
@@ -1273,6 +1280,38 @@ namespace Aerit.MAVLink.Generator
 			builder.AppendLine();
 			builder.AppendLine($"            return Next.ProcessAsync(packet.SystemId, packet.ComponentId, {name}.Deserialize(packet.Payload.Span), token);");
 			builder.AppendLine("        }");
+			builder.AppendLine("    }");
+
+			builder.AppendLine();
+
+			builder.AppendLine("    public partial class PacketMapMiddleware");
+			builder.AppendLine("    {");
+			builder.AppendLine($"        public PacketMapMiddleware {name}Endpoint<T>(Func<T> builder)");
+			builder.AppendLine($"            where T : IMessageMiddleware<{name}>");
+			builder.AppendLine("            => Add(branch => branch");
+			builder.AppendLine($"                .Append<{name}Middleware>()");
+			builder.AppendLine("                .Append(builder));");
+			builder.AppendLine();
+			builder.AppendLine($"        public PacketMapMiddleware {name}Endpoint<T>(Func<ILogger<T>, T> builder)");
+			builder.AppendLine($"            where T : IMessageMiddleware<{name}>");
+			builder.AppendLine("            => Add(branch => branch");
+			builder.AppendLine($"                .Append<{name}Middleware>()");
+			builder.AppendLine("                .Append(builder));");
+			builder.AppendLine();
+			builder.AppendLine($"        public PacketMapMiddleware {name}Endpoint(Func<byte, byte, {name}, bool> process)");
+			builder.AppendLine("            => Add(branch => branch");
+			builder.AppendLine($"                .Append<{name}Middleware>()");
+			builder.AppendLine("                .Endpoint(process));");
+			builder.AppendLine();
+			builder.AppendLine($"        public PacketMapMiddleware {name}Endpoint(Func<byte, byte, {name}, CancellationToken, Task<bool>> process)");
+			builder.AppendLine("            => Add(branch => branch");
+			builder.AppendLine($"                .Append<{name}Middleware>()");
+			builder.AppendLine("                .Endpoint(process));");
+			builder.AppendLine();
+			builder.AppendLine($"        public PacketMapMiddleware Log{name}()");
+			builder.AppendLine("            => Add(branch => branch");
+			builder.AppendLine($"                .Append<{name}Middleware>()");
+			builder.AppendLine("                .Log());");
 			builder.AppendLine("    }");
 
 			builder.Append('}');

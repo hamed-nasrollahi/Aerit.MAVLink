@@ -25,7 +25,7 @@ namespace Aerit.MAVLink.Generator
             builder.AppendLine("            _ => default");
             builder.AppendLine("        };");
 			builder.AppendLine();
-            builder.AppendLine("        public static bool Match(uint messageId, ReadOnlySpan<byte> payload, byte? targetSystem, byte? targetComponent) => messageId switch");
+            builder.AppendLine("        public static bool Match(uint messageId, ReadOnlySpan<byte> payload, byte? targetSystem, MavComponent? targetComponent) => messageId switch");
             builder.AppendLine("        {");
             foreach (var message in messages)
             {

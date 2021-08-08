@@ -35,11 +35,7 @@ await heartbeat.UpdateAsync(MavState.Boot);
 var pipeline = PipelineBuilder
 	.Create(loggerFactory)
 	.UsePacket()
-	.Map(map => map
-		.Add(branch => branch
-			.Append<HeartbeatMiddleware>()
-			.Log())
-	)
+	.Map(map => map.LogHeartbeat())
 	.Build();
 
 await heartbeat.UpdateAsync(MavState.Active);

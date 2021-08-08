@@ -6,11 +6,11 @@ using Aerit.MAVLink.Protocols.Command;
 
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder
-        .SetMinimumLevel(LogLevel.Debug)
-        .AddFilter("Microsoft", LogLevel.Warning)
-        .AddFilter("System", LogLevel.Warning)
-        .AddConsole();
+	builder
+		.SetMinimumLevel(LogLevel.Debug)
+		.AddFilter("Microsoft", LogLevel.Warning)
+		.AddFilter("System", LogLevel.Warning)
+		.AddConsole();
 });
 
 var logger = loggerFactory.CreateLogger("Main");
@@ -35,48 +35,44 @@ var pipeline = PipelineBuilder
 	.Create(loggerFactory)
 	.UsePacket()
 	.Map(map => map
-		.Add(branch => branch
-			.Append<CommandLongMiddleware>()
-            .Enpoint(async (systemId, componentId, msg, token) => 
+		.CommandLongEnpoint(async (systemId, componentId, msg, token) =>
+		{
+			logger.LogInformation("{command} received from {systemId}/{componentId}", msg, systemId, componentId);
+
+			if (!registry.TryAcquire(systemId, componentId, msg.Command, out var handler))
 			{
-				logger.LogInformation("{command} received from {systemId}/{componentId}", msg, systemId, componentId);
+				logger.LogWarning("Unable to acquire ({systemId}, {componentId}, {command})", systemId, componentId, msg.Command);
 
-				if (!registry.TryAcquire(systemId, componentId, msg.Command, out var handler))
-				{
-					logger.LogWarning("Unable to acquire ({systemId}, {componentId}, {command})", systemId, componentId, msg.Command);
+				return false;
+			}
 
-					return false;
-				}
-
-				await client.SendAsync(new CommandAck
-				{
-					Command = msg.Command,
-					Result = MavResult.Accepted,
-					TargetSystem = systemId,
-					TargetComponent = componentId 
-				});
-
-				handler.Dispose();
-
-				return true;
-			}))
-		.Add(branch => branch
-			.Append<CommandCancelMiddleware>()
-            .Enpoint((systemId, componentId, msg) => 
+			await client.SendAsync(new CommandAck
 			{
-				logger.LogInformation("{cancel} received", msg);
+				Command = msg.Command,
+				Result = MavResult.Accepted,
+				TargetSystem = systemId,
+				TargetComponent = componentId
+			});
 
-				if (!registry.TryGet(systemId, componentId, msg.Command, out var handler))
-				{
-					logger.LogWarning("Unable to cancel ({systemId}, {componentId}, {command})", systemId, componentId, msg.Command);
+			handler.Dispose();
 
-					return false;
-				}
+			return true;
+		})
+		.CommandCancelEnpoint((systemId, componentId, msg) =>
+		{
+			logger.LogInformation("{cancel} received", msg);
 
-				handler.Cancel();
+			if (!registry.TryGet(systemId, componentId, msg.Command, out var handler))
+			{
+				logger.LogWarning("Unable to cancel ({systemId}, {componentId}, {command})", systemId, componentId, msg.Command);
 
-				return true;
-			}))
+				return false;
+			}
+
+			handler.Cancel();
+
+			return true;
+		})
 	)
 	.Build();
 

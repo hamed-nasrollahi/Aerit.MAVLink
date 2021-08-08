@@ -32,6 +32,8 @@ namespace Aerit.MAVLink
 			this.logger = logger;
 		}
 
+		public IEnumerable<uint>? Ids => null;
+
 		public IPacketMiddleware? Next { get; set; }
 
 		private static readonly Counter IncomingPacketsCount = Metrics
@@ -40,7 +42,7 @@ namespace Aerit.MAVLink
 				LabelNames = new[] { "version" }
 			});
 
-		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
+		public Task<bool> ProcessAsync(ReadOnlyMemory<byte> buffer, PipelineContext context, CancellationToken token)
 		{
 			if (Next is null)
 			{
@@ -96,6 +98,8 @@ namespace Aerit.MAVLink
 			this.logger = logger;
 		}
 
+		public IEnumerable<uint>? Ids => null;
+
 		public IPacketMiddleware? Next { get; set; }
 
 		private static readonly Counter InvalidPacketsCount = Metrics
@@ -150,8 +154,10 @@ namespace Aerit.MAVLink
 		bool Eval(V2.Packet packet);
 	}
 
-	public class PacketMapMiddleware : IPacketMiddleware
+	public partial class PacketMapMiddleware : IPacketMiddleware
 	{
+		private readonly HashSet<uint> ids = new();
+
 		private readonly List<IPacketMapBranch> branches = new();
 		
 		private readonly ILoggerFactory loggerFactory;
@@ -160,6 +166,8 @@ namespace Aerit.MAVLink
 		{
 			this.loggerFactory = loggerFactory;
 		}
+
+		public IEnumerable<uint>? Ids => ids;
 
 		public Task<bool> ProcessAsync(V1.Packet packet, CancellationToken token)
 		{
@@ -194,7 +202,14 @@ namespace Aerit.MAVLink
 		public PacketMapMiddleware Add<T>(Func<PipelineBuilder<IPacketMapBranch>, (PipelineBuilder<IPacketMapBranch> builder, T last)> builder)
 			where T : IMiddleware
 		{
-			branches.Add(builder(BranchBuilder.Create(loggerFactory)).Build());
+			var branch = builder(BranchBuilder.Create(loggerFactory));
+
+			foreach (var id in branch.builder.Ids)
+			{
+				ids.Add(id);
+			}
+
+			branches.Add(branch.Build());
 
 			return this;
 		}

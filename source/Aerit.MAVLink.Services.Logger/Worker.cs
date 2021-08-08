@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Aerit.MAVLink.Services.Logger
 {
@@ -34,7 +33,7 @@ namespace Aerit.MAVLink.Services.Logger
 			try
 			{
 				var pipeline = pipelineBuilder
-					.Endpoint(async (buffer, token) =>
+					.Endpoint(async (buffer, context, token) =>
 					{
 						await writer.WriteAsync(client.TimeBootMs(), buffer, token);
 

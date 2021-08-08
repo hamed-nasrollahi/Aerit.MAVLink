@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +27,8 @@ namespace Aerit.MAVLink
 		{
 			this.process = process;
 		}
+		
+		public IEnumerable<uint>? Ids => null;
 
 		public Task<bool> ProcessAsync(byte systemId, byte componentId, T message, CancellationToken token)
 			=> Task.FromResult(process(systemId, componentId, message));
@@ -40,6 +43,8 @@ namespace Aerit.MAVLink
 			this.process = process;
 		}
 
+		public IEnumerable<uint>? Ids => null;
+
 		public Task<bool> ProcessAsync(byte systemId, byte componentId, T message, CancellationToken token)
 			=> process(systemId, componentId, message, token);
 	}
@@ -52,6 +57,8 @@ namespace Aerit.MAVLink
 		{
 			this.logger = logger;
 		}
+
+		public IEnumerable<uint>? Ids => null;
 
 		public Task<bool> ProcessAsync(byte systemId, byte componentId, T message, CancellationToken token)
 		{

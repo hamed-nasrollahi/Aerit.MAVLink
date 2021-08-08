@@ -185,13 +185,17 @@ namespace Aerit.MAVLink
 		private static readonly Counter ProcessedBuffersCount = Metrics
 			.CreateCounter("mavlink_buffers_processed_total", "Number of mavlink buffers processed.");
 
-		public async Task ListenAsync(IBufferMiddleware pipeline, CancellationToken token = default)
+		public async Task ListenAsync(Pipeline pipeline, CancellationToken token = default)
 		{
 			try
 			{
 				var completionSource = new TaskCompletionSource<bool>();
 
 				using var registration = token.Register(() => completionSource.TrySetResult(true));
+
+				var context = new PipelineContext(
+					Target: (SystemId, ComponentId),
+					Ids: pipeline.Ids);
 
 				while (true)
 				{
@@ -207,7 +211,7 @@ namespace Aerit.MAVLink
 
 						IncomingBuffersCount.Inc();
 
-						if (await pipeline.ProcessAsync(buffer.AsMemory(0, receive.Result), token))
+						if (await pipeline.First.ProcessAsync(buffer.AsMemory(0, receive.Result), context, token))
 						{
 							ProcessedBuffersCount.Inc();
 						}
